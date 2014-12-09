@@ -56,7 +56,6 @@ class FmRdsSimulator_i : public FmRdsSimulator_base
         void deviceDisable(frontend_tuner_status_struct_struct &fts, size_t tuner_id);
         bool deviceSetTuning(const frontend::frontend_tuner_allocation_struct &request, frontend_tuner_status_struct_struct &fts, size_t tuner_id);
         bool deviceDeleteTuning(frontend_tuner_status_struct_struct &fts, size_t tuner_id);
-        std::string xmlPath;
         void construct();
 };
 

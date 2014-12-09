@@ -36,6 +36,8 @@ class FmRdsSimulator_base : public frontend::FrontendTunerDevice<frontend_tuner_
         void frontendTunerStatusChanged(const std::vector<frontend_tuner_status_struct_struct>* oldValue, const std::vector<frontend_tuner_status_struct_struct>* newValue);
 
     protected:
+        // Member variables exposed as properties
+        std::string PathToConfiguration;
 
         // Ports
         frontend::InRFInfoPort *RFInfo_in;

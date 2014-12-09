@@ -66,7 +66,6 @@ int FmRdsSimulator_i::serviceFunction()
 
 void FmRdsSimulator_i::construct()
 {
-	xmlPath = "/tmp/testDir";
 	digiSim = NULL;
 	cb = NULL;
 }
@@ -105,19 +104,22 @@ void FmRdsSimulator_i::initDigitizer() {
 	switch (this->log_level())
 	{
 	case 5:
-		digiSim->init(xmlPath, cb, RfSimulators::TRACE);
+		digiSim->init(PathToConfiguration, cb, RfSimulators::TRACE);
 		break;
 	case 4:
-		digiSim->init(xmlPath, cb, RfSimulators::DEBUG);
+		digiSim->init(PathToConfiguration, cb, RfSimulators::DEBUG);
 		break;
 	case 3:
-		digiSim->init(xmlPath, cb, RfSimulators::INFO);
+		digiSim->init(PathToConfiguration, cb, RfSimulators::INFO);
 		break;
 	case 2:
-		digiSim->init(xmlPath, cb, RfSimulators::WARN);
+		digiSim->init(PathToConfiguration, cb, RfSimulators::WARN);
 		break;
 	case 1:
-		digiSim->init(xmlPath, cb, RfSimulators::ERROR);
+		digiSim->init(PathToConfiguration, cb, RfSimulators::ERROR);
+		break;
+	default:
+		digiSim->init(PathToConfiguration, cb, RfSimulators::WARN);
 		break;
 	}
 

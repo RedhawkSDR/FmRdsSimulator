@@ -111,4 +111,9 @@ False: Does not need control and can just attach to any currently tasked device 
     </simple>
     <configurationkind kindtype="allocation"/>
   </struct>
+  <simple id="PathToConfiguration" mode="readwrite" name="PathToConfiguration" type="string">
+    <value>/usr/share/libFmRdsSimulator/examples</value>
+    <kind kindtype="execparam"/>
+    <action type="external"/>
+  </simple>
 </properties>

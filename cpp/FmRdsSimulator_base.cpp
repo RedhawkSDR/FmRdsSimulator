@@ -94,6 +94,15 @@ void FmRdsSimulator_base::releaseObject() throw (CORBA::SystemException, CF::Lif
 void FmRdsSimulator_base::loadProperties()
 {
     device_kind = "FRONTEND::TUNER";
+    addProperty(PathToConfiguration,
+                "/usr/share/libFmRdsSimulator/examples",
+                "PathToConfiguration",
+                "PathToConfiguration",
+                "readwrite",
+                "",
+                "external",
+                "execparam");
+
     frontend_listener_allocation = frontend::frontend_listener_allocation_struct();
     frontend_tuner_allocation = frontend::frontend_tuner_allocation_struct();
 }
