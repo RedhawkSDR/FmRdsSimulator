@@ -10,8 +10,11 @@
 #include "FmRdsSimulator.h"
 #include <boost/thread.hpp>
 #include <boost/filesystem/path.hpp>
+#include <math.h>
 
 #define DEFAULT_STREAM_ID "MyStreamID"
+#define MAX_SAMPLE_RATE 2280000.0
+#define MIN_SAMPLE_RATE (MAX_SAMPLE_RATE / 1000.0)
 
 PREPARE_LOGGING(FmRdsSimulator_i)
 
@@ -99,7 +102,25 @@ void FmRdsSimulator_i::initDigitizer() {
 
 	digiSim = RfSimulators::RfSimulatorFactory::createFmRdsSimulator();
 
-	digiSim->init(xmlPath, cb, RfSimulators::FATAL); //TODO: Log level should be set via prop.
+	switch (this->log_level())
+	{
+	case 5:
+		digiSim->init(xmlPath, cb, RfSimulators::TRACE);
+		break;
+	case 4:
+		digiSim->init(xmlPath, cb, RfSimulators::DEBUG);
+		break;
+	case 3:
+		digiSim->init(xmlPath, cb, RfSimulators::INFO);
+		break;
+	case 2:
+		digiSim->init(xmlPath, cb, RfSimulators::WARN);
+		break;
+	case 1:
+		digiSim->init(xmlPath, cb, RfSimulators::ERROR);
+		break;
+	}
+
 
 	setNumChannels(1);
 
@@ -110,8 +131,8 @@ void FmRdsSimulator_i::initDigitizer() {
     frontend_tuner_status[0].tuner_type = "RX_DIGITIZER";
     frontend_tuner_status[0].center_frequency = digiSim->getCenterFrequency();
     frontend_tuner_status[0].sample_rate = digiSim->getSampleRate();
-    // set bandwidth to the sample rate (usable BW == SR since samples are complex)
-    frontend_tuner_status[0].bandwidth = frontend_tuner_status[0].sample_rate;
+    // set bandwidth to the max sample rate.
+    frontend_tuner_status[0].bandwidth = MAX_SAMPLE_RATE;
     frontend_tuner_status[0].rf_flow_id = "";
     frontend_tuner_status[0].gain = digiSim->getGain();
     frontend_tuner_status[0].group_id = "";
@@ -138,7 +159,7 @@ void FmRdsSimulator_i::deviceEnable(frontend_tuner_status_struct_struct &fts, si
 
 	fts.center_frequency = digiSim->getCenterFrequency();
 	fts.sample_rate = digiSim->getSampleRate();
-	fts.bandwidth = fts.sample_rate;
+	fts.bandwidth = MAX_SAMPLE_RATE;
 	fts.stream_id = DEFAULT_STREAM_ID;
 	fts.enabled = true;
 
@@ -167,14 +188,55 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 		return false;
 	}
 
-	// TODO: Implement the sample rate, bandwidth, etc. stuff.
-	digiSim->setCenterFrequency((float) request.center_frequency);
-	fts.center_frequency = digiSim->getCenterFrequency();
+	if (request.tuner_type != "RX_DIGITIZER") {
+		return false;
+	}
+
+	// User cares about sample rate
+	if (request.sample_rate != 0.0) {
+
+		float minAcceptableSampleRate = (1 - request.sample_rate_tolerance) * request.sample_rate;
+		float maxAcceptableSampleRate = (1 + request.sample_rate_tolerance) * request.sample_rate;
+
+		// if the request isn't in the sample rate range return false
+		if (minAcceptableSampleRate >= MAX_SAMPLE_RATE || maxAcceptableSampleRate <= MIN_SAMPLE_RATE) {
+			return false;
+		}
+
+
+		unsigned int closestInteger = round(MAX_SAMPLE_RATE / request.sample_rate);
+		unsigned int closestSampleRate = round(MAX_SAMPLE_RATE / closestInteger);
+
+		if (closestSampleRate > maxAcceptableSampleRate || closestSampleRate < minAcceptableSampleRate) {
+			return false;
+		}
+	}
+
+	// User cares about bandwidth...they shouldn't though.  It's not settable.
+	if (request.bandwidth != 0.0) {
+		float minAcceptableBandwidth = (1 - request.bandwidth_tolerance) * request.bandwidth;
+		float maxAcceptableBandwidth = (1 + request.bandwidth_tolerance) * request.bandwidth;
+
+		// if the request isn't near the only bandwidth supported
+		if (minAcceptableBandwidth >= MAX_SAMPLE_RATE || maxAcceptableBandwidth <= MIN_SAMPLE_RATE) {
+			return false;
+		}
+	}
+
+	try {
+		digiSim->setCenterFrequency((float) request.center_frequency);
+		fts.center_frequency = digiSim->getCenterFrequency();
+	} catch (OutOfRangeException &ex) {
+		LOG_WARN(FmRdsSimulator_i, "Tried to tune to " << request.center_frequency << " but request was rejected by simulator.");
+		return false;
+	}
 
 	if (request.sample_rate > 0) {
-		digiSim->setSampleRate(request.sample_rate); // TODO: Take into account the tolerance.
+		digiSim->setSampleRate((unsigned int) request.sample_rate);
 		fts.sample_rate = digiSim->getSampleRate();
 	}
+
+	fts.bandwidth = MAX_SAMPLE_RATE;
 
     return true;
 }
@@ -234,10 +296,13 @@ void FmRdsSimulator_i::setTunerCenterFrequency(const std::string& allocation_id,
         throw FRONTEND::FrontendException(("ID "+allocation_id+" does not have authorization to modify the tuner").c_str());
     if (freq<0) throw FRONTEND::BadParameterException();
 
-    //TODO: Exception if not in range.
-    digiSim->setCenterFrequency((float) freq);
+    try {
+		digiSim->setCenterFrequency((float) freq);
+		this->frontend_tuner_status[idx].center_frequency = freq;
+    } catch (OutOfRangeException &ex) {
+    	throw FRONTEND::BadParameterException();
+    }
 
-    this->frontend_tuner_status[idx].center_frequency = freq;
 }
 
 double FmRdsSimulator_i::getTunerCenterFrequency(const std::string& allocation_id) {
@@ -253,9 +318,12 @@ void FmRdsSimulator_i::setTunerBandwidth(const std::string& allocation_id, doubl
         throw FRONTEND::FrontendException(("ID "+allocation_id+" does not have authorization to modify the tuner").c_str());
     if (bw<0) throw FRONTEND::BadParameterException();
 
-    //TODO: Fill in stuff here?
+    if (bw != MAX_SAMPLE_RATE) {
+    	LOG_WARN(FmRdsSimulator_i, "User tried to set bandwidth to: " << bw);
+    	LOG_WARN(FmRdsSimulator_i, "Only acceptable bw is " << MAX_SAMPLE_RATE);
+    }
 
-    this->frontend_tuner_status[idx].bandwidth = bw;
+    this->frontend_tuner_status[idx].bandwidth = MAX_SAMPLE_RATE;
 }
 
 double FmRdsSimulator_i::getTunerBandwidth(const std::string& allocation_id) {
@@ -325,8 +393,12 @@ void FmRdsSimulator_i::setTunerOutputSampleRate(const std::string& allocation_id
         throw FRONTEND::FrontendException(("ID "+allocation_id+" does not have authorization to modify the tuner").c_str());
     if (sr<0) throw FRONTEND::BadParameterException();
 
-    // TODO: Exceptions and stuff.
-    digiSim->setSampleRate((float) sr);
+    try {
+		digiSim->setSampleRate((float) sr);
+    } catch (InvalidValue &ex) {
+    	throw FRONTEND::BadParameterException();
+    	return;
+    }
 
     this->frontend_tuner_status[idx].sample_rate = sr;
 }

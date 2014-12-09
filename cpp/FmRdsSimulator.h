@@ -4,6 +4,7 @@
 #include "FmRdsSimulator_base.h"
 #include "RfSimulators/RfSimulatorFactory.h"
 #include "RfSimulators/RfSimulator.h"
+#include "RfSimulators/Exceptions.h"
 #include "MyCallBackClass.h"
 
 
