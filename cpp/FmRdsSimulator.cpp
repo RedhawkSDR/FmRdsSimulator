@@ -68,8 +68,23 @@ void FmRdsSimulator_i::construct()
 {
 	digiSim = NULL;
 	cb = NULL;
+
+	/** Register callbacks **/
+	addPropertyChangeListener("addAWGN", this, &FmRdsSimulator_i::addAWGNChanged);
+	addPropertyChangeListener("noiseSigma", this, &FmRdsSimulator_i::noiseSigmaChanged);
 }
 
+void FmRdsSimulator_i::addAWGNChanged(const bool* old_value, const bool* new_value) {
+	if (digiSim) {
+		digiSim->addNoise(*new_value);
+	}
+}
+
+void FmRdsSimulator_i::noiseSigmaChanged(const float* old_value, const float* new_value) {
+	if (digiSim) {
+		digiSim->setNoiseSigma(*new_value);
+	}
+}
 
 void FmRdsSimulator_i::initialize() throw (CF::LifeCycle::InitializeError, CORBA::SystemException)
 {
@@ -185,23 +200,41 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
     modify fts, which corresponds to this->frontend_tuner_status[tuner_id]
     return true if the tuning succeeded, and false if it failed
     ************************************************************/
+	LOG_INFO(FmRdsSimulator_i, "Received a request: ");
+	LOG_INFO(FmRdsSimulator_i, "Allocation ID: " << request.allocation_id);
+	LOG_INFO(FmRdsSimulator_i, "Bandwidth: " << request.bandwidth);
+	LOG_INFO(FmRdsSimulator_i, "Bandwidth Tolerance: " << request.bandwidth_tolerance);
+	LOG_INFO(FmRdsSimulator_i, "Center Frequency: " << request.center_frequency);
+	LOG_INFO(FmRdsSimulator_i, "Device Control: " << request.device_control);
+	LOG_INFO(FmRdsSimulator_i, "Group ID: " << request.group_id);
+	LOG_INFO(FmRdsSimulator_i, "RF Flow ID: " << request.rf_flow_id);
+	LOG_INFO(FmRdsSimulator_i, "Sample Rate: " << request.sample_rate);
+	LOG_INFO(FmRdsSimulator_i, "Sampel Rate Tolerance: " << request.sample_rate_tolerance);
+	LOG_INFO(FmRdsSimulator_i, "Tuner Type: " << request.tuner_type);
 
 	if (not digiSim) {
+		LOG_WARN(FmRdsSimulator_i, "deviceSetTuning called when Simulator has not been created.  This is not expected");
 		return false;
 	}
 
 	if (request.tuner_type != "RX_DIGITIZER") {
+		LOG_WARN(FmRdsSimulator_i, "Tuner type does not equal RX_DIGITIZER.  Request denied.");
 		return false;
 	}
 
 	// User cares about sample rate
 	if (request.sample_rate != 0.0) {
 
+
 		float minAcceptableSampleRate = (1 - request.sample_rate_tolerance) * request.sample_rate;
 		float maxAcceptableSampleRate = (1 + request.sample_rate_tolerance) * request.sample_rate;
 
+		LOG_INFO(FmRdsSimulator_i, "Based on request, minimum acceptable sample rate: " << minAcceptableSampleRate);
+		LOG_INFO(FmRdsSimulator_i, "Based on request, maximum acceptable sample rate: " << maxAcceptableSampleRate);
+
 		// if the request isn't in the sample rate range return false
 		if (minAcceptableSampleRate >= MAX_SAMPLE_RATE || maxAcceptableSampleRate <= MIN_SAMPLE_RATE) {
+			LOG_WARN(FmRdsSimulator_i, "Requested sample rate is outside of range");
 			return false;
 		}
 
@@ -210,6 +243,7 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 		unsigned int closestSampleRate = round(MAX_SAMPLE_RATE / closestInteger);
 
 		if (closestSampleRate > maxAcceptableSampleRate || closestSampleRate < minAcceptableSampleRate) {
+			LOG_WARN(FmRdsSimulator_i, "Cannot deliver sample rate within the requested tolerance");
 			return false;
 		}
 	}
@@ -219,8 +253,12 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 		float minAcceptableBandwidth = (1 - request.bandwidth_tolerance) * request.bandwidth;
 		float maxAcceptableBandwidth = (1 + request.bandwidth_tolerance) * request.bandwidth;
 
+		LOG_INFO(FmRdsSimulator_i, "Based on request, minimum acceptable bandwidth: " << minAcceptableBandwidth);
+		LOG_INFO(FmRdsSimulator_i, "Based on request, maximum acceptable bandwidth: " << maxAcceptableBandwidth);
+
 		// if the request isn't near the only bandwidth supported
 		if (minAcceptableBandwidth >= MAX_SAMPLE_RATE || maxAcceptableBandwidth <= MIN_SAMPLE_RATE) {
+			LOG_WARN(FmRdsSimulator_i, "Bandwidth cannot be accommodated.  Set bandwidth to: " << MAX_SAMPLE_RATE);
 			return false;
 		}
 	}

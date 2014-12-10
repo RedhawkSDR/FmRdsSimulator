@@ -38,6 +38,8 @@ class FmRdsSimulator_base : public frontend::FrontendTunerDevice<frontend_tuner_
     protected:
         // Member variables exposed as properties
         std::string PathToConfiguration;
+        float noiseSigma;
+        bool addAWGN;
 
         // Ports
         frontend::InRFInfoPort *RFInfo_in;

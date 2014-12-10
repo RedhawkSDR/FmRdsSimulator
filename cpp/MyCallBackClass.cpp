@@ -51,6 +51,14 @@ void MyCallBackClass::dataDelivery(std::valarray< std::complex<float> > samples)
         sri.blocking = false;
         sri.streamID = (*fts)[0].stream_id.c_str();
 
+		sri.keywords.length(2);
+		sri.keywords[0].id = "CHAN_RF";
+		sri.keywords[0].value <<= (*fts)[0].center_frequency;
+
+		sri.keywords[1].id = "COL_RF";
+		sri.keywords[1].value <<= (*fts)[0].center_frequency;
+
+
 		outputPort->pushSRI(sri);
 		pushedSRI = true;
 	}

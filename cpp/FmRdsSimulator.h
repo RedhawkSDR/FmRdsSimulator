@@ -50,6 +50,8 @@ class FmRdsSimulator_i : public FmRdsSimulator_base
     private:
         RfSimulators::RfSimulator* digiSim;
         MyCallBackClass *cb;
+        void addAWGNChanged(const bool* old_value, const bool* new_value);
+        void noiseSigmaChanged(const float* old_value, const float* new_value);
 
         // these are pure virtual, must be implemented here
         void deviceEnable(frontend_tuner_status_struct_struct &fts, size_t tuner_id);

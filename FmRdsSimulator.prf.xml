@@ -116,4 +116,14 @@ False: Does not need control and can just attach to any currently tasked device 
     <kind kindtype="execparam"/>
     <action type="external"/>
   </simple>
+  <simple id="noiseSigma" mode="readwrite" name="noiseSigma" type="float">
+    <value>0.1</value>
+    <kind kindtype="configure"/>
+    <action type="external"/>
+  </simple>
+  <simple id="addAWGN" mode="readwrite" name="addAWGN" type="boolean">
+    <value>true</value>
+    <kind kindtype="configure"/>
+    <action type="external"/>
+  </simple>
 </properties>
