@@ -196,6 +196,8 @@ void FmRdsSimulator_i::deviceDisable(frontend_tuner_status_struct_struct &fts, s
 }
 bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation_struct &request, frontend_tuner_status_struct_struct &fts, size_t tuner_id){
 
+	bool sriChanged = false;
+
 	/************************************************************
     modify fts, which corresponds to this->frontend_tuner_status[tuner_id]
     return true if the tuning succeeded, and false if it failed
@@ -224,7 +226,6 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 
 	// User cares about sample rate
 	if (request.sample_rate != 0.0) {
-
 
 		float minAcceptableSampleRate = (1 - request.sample_rate_tolerance) * request.sample_rate;
 		float maxAcceptableSampleRate = (1 + request.sample_rate_tolerance) * request.sample_rate;
@@ -266,6 +267,7 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 	try {
 		digiSim->setCenterFrequency((float) request.center_frequency);
 		fts.center_frequency = digiSim->getCenterFrequency();
+		sriChanged = true; // The COL and CHAN RF likely changed.
 	} catch (OutOfRangeException &ex) {
 		LOG_WARN(FmRdsSimulator_i, "Tried to tune to " << request.center_frequency << " but request was rejected by simulator.");
 		return false;
@@ -274,9 +276,14 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 	if (request.sample_rate > 0) {
 		digiSim->setSampleRate((unsigned int) request.sample_rate);
 		fts.sample_rate = digiSim->getSampleRate();
+		sriChanged = true;
 	}
 
 	fts.bandwidth = MAX_SAMPLE_RATE;
+
+	if (sriChanged) {
+		cb->pushUpdatedSRI();
+	}
 
     return true;
 }
@@ -339,6 +346,8 @@ void FmRdsSimulator_i::setTunerCenterFrequency(const std::string& allocation_id,
     try {
 		digiSim->setCenterFrequency((float) freq);
 		this->frontend_tuner_status[idx].center_frequency = freq;
+		// The COL_RF and CHAN_RF has changed
+		cb->pushUpdatedSRI();
     } catch (OutOfRangeException &ex) {
     	throw FRONTEND::BadParameterException();
     }

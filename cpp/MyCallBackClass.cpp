@@ -13,10 +13,14 @@ MyCallBackClass::MyCallBackClass(bulkio::OutFloatPort * outputPort, std::vector<
 	this->outputPort = outputPort;
     this->fts = fts;
 
-    pushedSRI = false;
+    pushSRI = true;
 }
 
 MyCallBackClass::~MyCallBackClass() {
+}
+
+void MyCallBackClass::pushUpdatedSRI() {
+	pushSRI = true;
 }
 
 void MyCallBackClass::dataDelivery(std::valarray< std::complex<float> > samples) {
@@ -33,7 +37,9 @@ void MyCallBackClass::dataDelivery(std::valarray< std::complex<float> > samples)
 			data[2*i+1] = samples[i].imag();
 	}
 
-	if (not pushedSRI) {
+	if (pushSRI) {
+		pushSRI = false;
+
         BULKIO::StreamSRI sri;
         sri.hversion = 1;
         sri.xstart = 0.0;
@@ -60,7 +66,6 @@ void MyCallBackClass::dataDelivery(std::valarray< std::complex<float> > samples)
 
 
 		outputPort->pushSRI(sri);
-		pushedSRI = true;
 	}
 	outputPort->pushPacket(data, my_tmp_time, false, (*fts)[0].stream_id);
 }

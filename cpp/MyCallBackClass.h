@@ -16,10 +16,11 @@ public:
 	MyCallBackClass(bulkio::OutFloatPort * outputPort, std::vector<frontend_tuner_status_struct_struct> *fts);
 	virtual ~MyCallBackClass();
 	void dataDelivery(std::valarray< std::complex<float> > samples);
+	void pushUpdatedSRI();
 
 private:
 	bulkio::OutFloatPort * outputPort;
-	int pushedSRI;
+	bool pushSRI;
 	std::vector<frontend_tuner_status_struct_struct> *fts;
 
 };
