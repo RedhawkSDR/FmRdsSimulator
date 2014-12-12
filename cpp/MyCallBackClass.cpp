@@ -23,7 +23,7 @@ void MyCallBackClass::pushUpdatedSRI() {
 	pushSRI = true;
 }
 
-void MyCallBackClass::dataDelivery(std::valarray< std::complex<float> > samples) {
+void MyCallBackClass::dataDelivery(std::valarray< std::complex<float> > &samples) {
 
 	struct timeval tmp_time;
 	struct timezone tmp_tz;
