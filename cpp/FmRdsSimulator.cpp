@@ -449,7 +449,8 @@ void FmRdsSimulator_i::setTunerOutputSampleRate(const std::string& allocation_id
     	return;
     }
 
-    this->frontend_tuner_status[idx].sample_rate = sr;
+    this->frontend_tuner_status[idx].sample_rate = digiSim->getSampleRate();
+    cb->pushUpdatedSRI();
 }
 
 double FmRdsSimulator_i::getTunerOutputSampleRate(const std::string& allocation_id){
