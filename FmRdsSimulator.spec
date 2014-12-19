@@ -28,8 +28,8 @@ BuildRequires:  frontendInterfaces >= 2.2 bulkioInterfaces >= 1.10
 Requires:       frontendInterfaces >= 2.2 bulkioInterfaces >= 1.10
 
 # Library requires
-BuildRequires:  libFmRdsSimulator-devel 
-Requires:       libFmRdsSimulator
+BuildRequires:  libRfSimulators-devel 
+Requires:       libRfSimulators
 
 %description
 Device %{name}
