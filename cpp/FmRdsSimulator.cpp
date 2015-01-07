@@ -16,35 +16,47 @@
 #define MAX_SAMPLE_RATE 2280000.0
 #define MIN_SAMPLE_RATE (MAX_SAMPLE_RATE / 1000.0)
 
+// From the FM Bandwidth
+#define MIN_FREQ_RANGE 88000000
+#define MAX_FREQ_RANGE 108000000
+
+// Totally arbitrary gain limitations.
+#define MIN_GAIN_RANGE -100
+#define MAX_GAIN_RANGE 100
+
 PREPARE_LOGGING(FmRdsSimulator_i)
 
 FmRdsSimulator_i::FmRdsSimulator_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl) :
     FmRdsSimulator_base(devMgr_ior, id, lbl, sftwrPrfl)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     construct();
-
 }
 
 FmRdsSimulator_i::FmRdsSimulator_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, char *compDev) :
     FmRdsSimulator_base(devMgr_ior, id, lbl, sftwrPrfl, compDev)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     construct();
 }
 
 FmRdsSimulator_i::FmRdsSimulator_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities) :
     FmRdsSimulator_base(devMgr_ior, id, lbl, sftwrPrfl, capacities)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     construct();
 }
 
 FmRdsSimulator_i::FmRdsSimulator_i(char *devMgr_ior, char *id, char *lbl, char *sftwrPrfl, CF::Properties capacities, char *compDev) :
     FmRdsSimulator_base(devMgr_ior, id, lbl, sftwrPrfl, capacities, compDev)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     construct();
 }
 
 FmRdsSimulator_i::~FmRdsSimulator_i()
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
 	if (digiSim) {
 		delete(digiSim);
 		digiSim = NULL;
@@ -61,26 +73,49 @@ FmRdsSimulator_i::~FmRdsSimulator_i()
  */
 int FmRdsSimulator_i::serviceFunction()
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     return FINISH;
 }
 
 void FmRdsSimulator_i::construct()
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
 	digiSim = NULL;
 	cb = NULL;
 
 	/** Register callbacks **/
 	addPropertyChangeListener("addAWGN", this, &FmRdsSimulator_i::addAWGNChanged);
 	addPropertyChangeListener("noiseSigma", this, &FmRdsSimulator_i::noiseSigmaChanged);
+
+	// 0.5 because of cast truncation.
+	unsigned int maxSampleRateInt = (unsigned int) (MAX_SAMPLE_RATE + 0.5);
+	int iterator = 2;
+	unsigned int tmpSampleRate = maxSampleRateInt;
+	availableSampleRates.push_back(tmpSampleRate);
+
+	while (tmpSampleRate >= MIN_SAMPLE_RATE) {
+		if (maxSampleRateInt % iterator == 0) {
+			tmpSampleRate = maxSampleRateInt / iterator;
+
+			if (tmpSampleRate >= MIN_SAMPLE_RATE) {
+				availableSampleRates.push_back(tmpSampleRate);
+			}
+		}
+		++iterator;
+	}
+
+	std::sort (availableSampleRates.begin(), availableSampleRates.end());
 }
 
 void FmRdsSimulator_i::addAWGNChanged(const bool* old_value, const bool* new_value) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
 	if (digiSim) {
 		digiSim->addNoise(*new_value);
 	}
 }
 
 void FmRdsSimulator_i::noiseSigmaChanged(const float* old_value, const float* new_value) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
 	if (digiSim) {
 		digiSim->setNoiseSigma(*new_value);
 	}
@@ -88,6 +123,7 @@ void FmRdsSimulator_i::noiseSigmaChanged(const float* old_value, const float* ne
 
 void FmRdsSimulator_i::initialize() throw (CF::LifeCycle::InitializeError, CORBA::SystemException)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
 	FmRdsSimulator_base::initialize();
 
 	initDigitizer();
@@ -100,6 +136,7 @@ void FmRdsSimulator_i::initialize() throw (CF::LifeCycle::InitializeError, CORBA
 }
 
 void FmRdsSimulator_i::initDigitizer() {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
 	setNumChannels(0);
 
 	if (cb) {
@@ -115,6 +152,8 @@ void FmRdsSimulator_i::initDigitizer() {
 	cb = new MyCallBackClass(dataFloat_out, &frontend_tuner_status);
 
 	digiSim = RfSimulators::RfSimulatorFactory::createFmRdsSimulator();
+	digiSim->setCenterFrequencyRange(MIN_FREQ_RANGE, MAX_FREQ_RANGE);
+	digiSim->setGainRange(MIN_GAIN_RANGE, MAX_GAIN_RANGE);
 
 	switch (this->log_level())
 	{
@@ -162,6 +201,7 @@ void FmRdsSimulator_i::initDigitizer() {
 Functions supporting tuning allocation
 *************************************************************/
 void FmRdsSimulator_i::deviceEnable(frontend_tuner_status_struct_struct &fts, size_t tuner_id){
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     /************************************************************
     modify fts, which corresponds to this->frontend_tuner_status[tuner_id]
     Make sure to set the 'enabled' member of fts to indicate that tuner as enabled
@@ -183,6 +223,7 @@ void FmRdsSimulator_i::deviceEnable(frontend_tuner_status_struct_struct &fts, si
     return;
 }
 void FmRdsSimulator_i::deviceDisable(frontend_tuner_status_struct_struct &fts, size_t tuner_id){
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     /************************************************************
     modify fts, which corresponds to this->frontend_tuner_status[tuner_id]
     Make sure to reset the 'enabled' member of fts to indicate that tuner as disabled
@@ -195,6 +236,7 @@ void FmRdsSimulator_i::deviceDisable(frontend_tuner_status_struct_struct &fts, s
     return;
 }
 bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation_struct &request, frontend_tuner_status_struct_struct &fts, size_t tuner_id){
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
 
 	bool sriChanged = false;
 
@@ -211,7 +253,7 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 	LOG_INFO(FmRdsSimulator_i, "Group ID: " << request.group_id);
 	LOG_INFO(FmRdsSimulator_i, "RF Flow ID: " << request.rf_flow_id);
 	LOG_INFO(FmRdsSimulator_i, "Sample Rate: " << request.sample_rate);
-	LOG_INFO(FmRdsSimulator_i, "Sampel Rate Tolerance: " << request.sample_rate_tolerance);
+	LOG_INFO(FmRdsSimulator_i, "Sample Rate Tolerance: " << request.sample_rate_tolerance);
 	LOG_INFO(FmRdsSimulator_i, "Tuner Type: " << request.tuner_type);
 
 	if (not digiSim) {
@@ -223,12 +265,15 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 		LOG_WARN(FmRdsSimulator_i, "Tuner type does not equal RX_DIGITIZER.  Request denied.");
 		return false;
 	}
+	unsigned int sampleRateToSet = 0;
 
 	// User cares about sample rate
 	if (request.sample_rate != 0.0) {
 
-		float minAcceptableSampleRate = (1 - request.sample_rate_tolerance) * request.sample_rate;
-		float maxAcceptableSampleRate = (1 + request.sample_rate_tolerance) * request.sample_rate;
+		// For FEI tolerance, it is not a +/- it's give me this or better.
+		float minAcceptableSampleRate = request.sample_rate;
+		float maxAcceptableSampleRate = (1 + request.sample_rate_tolerance/100.0) * request.sample_rate;
+
 
 		LOG_INFO(FmRdsSimulator_i, "Based on request, minimum acceptable sample rate: " << minAcceptableSampleRate);
 		LOG_INFO(FmRdsSimulator_i, "Based on request, maximum acceptable sample rate: " << maxAcceptableSampleRate);
@@ -239,29 +284,39 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 			return false;
 		}
 
+		std::vector<unsigned int>::iterator closestIterator;
+		closestIterator = std::lower_bound(availableSampleRates.begin(), availableSampleRates.end(), (unsigned int) (minAcceptableSampleRate+0.5));
 
-		unsigned int closestInteger = round(MAX_SAMPLE_RATE / request.sample_rate);
-		unsigned int closestSampleRate = round(MAX_SAMPLE_RATE / closestInteger);
+		if (closestIterator == availableSampleRates.end()) {
+			LOG_ERROR(FmRdsSimulator_i, "Did not find sample rate in available list...this should not happen");
+		}
 
-		if (closestSampleRate > maxAcceptableSampleRate || closestSampleRate < minAcceptableSampleRate) {
+		unsigned int closestSampleRate = *closestIterator;
+
+		if (closestSampleRate > maxAcceptableSampleRate) {
 			LOG_WARN(FmRdsSimulator_i, "Cannot deliver sample rate within the requested tolerance");
 			return false;
 		}
+
+		sampleRateToSet = closestSampleRate;
 	}
 
-	// User cares about bandwidth...they shouldn't though.  It's not settable.
+	// User cares about bandwidth...they shouldn't though.  It's not setable.
 	if (request.bandwidth != 0.0) {
-		float minAcceptableBandwidth = (1 - request.bandwidth_tolerance) * request.bandwidth;
-		float maxAcceptableBandwidth = (1 + request.bandwidth_tolerance) * request.bandwidth;
+		float minAcceptableBandwidth = request.bandwidth;
+		float maxAcceptableBandwidth = (1 + request.bandwidth_tolerance/100.0) * request.bandwidth;
 
 		LOG_INFO(FmRdsSimulator_i, "Based on request, minimum acceptable bandwidth: " << minAcceptableBandwidth);
 		LOG_INFO(FmRdsSimulator_i, "Based on request, maximum acceptable bandwidth: " << maxAcceptableBandwidth);
 
-		// if the request isn't near the only bandwidth supported
-		if (minAcceptableBandwidth >= MAX_SAMPLE_RATE || maxAcceptableBandwidth <= MIN_SAMPLE_RATE) {
+
+		// if MAX_SAMPLE_RATE < minAcceptable or MAX_SAMPLE_RATE > maxAcceptable we return an error.
+		if (frontend::floatingPointCompare(MAX_SAMPLE_RATE, minAcceptableBandwidth) < -1.0
+				|| frontend::floatingPointCompare(MAX_SAMPLE_RATE, maxAcceptableBandwidth) > 1.0) {
 			LOG_WARN(FmRdsSimulator_i, "Bandwidth cannot be accommodated.  Set bandwidth to: " << MAX_SAMPLE_RATE);
 			return false;
 		}
+
 	}
 
 	try {
@@ -273,8 +328,9 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 		return false;
 	}
 
-	if (request.sample_rate > 0) {
-		digiSim->setSampleRate((unsigned int) request.sample_rate);
+	if (request.sample_rate > 0 && sampleRateToSet > 0) {
+		LOG_INFO(FmRdsSimulator_i, "Setting the sample rate to: " << sampleRateToSet);
+		digiSim->setSampleRate(sampleRateToSet);
 		fts.sample_rate = digiSim->getSampleRate();
 		sriChanged = true;
 	}
@@ -288,12 +344,12 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
     return true;
 }
 bool FmRdsSimulator_i::deviceDeleteTuning(frontend_tuner_status_struct_struct &fts, size_t tuner_id) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     /************************************************************
     modify fts, which corresponds to this->frontend_tuner_status[tuner_id]
     return true if the tune deletion succeeded, and false if it failed
     ************************************************************/
 
-	// TODO: Catch exceptions and stuff I guess?
 	// TODO: Should I push EOS?
 	if (digiSim) {
 		digiSim->stop();
@@ -311,12 +367,14 @@ bool FmRdsSimulator_i::deviceDeleteTuning(frontend_tuner_status_struct_struct &f
 Functions servicing the tuner control port
 *************************************************************/
 std::string FmRdsSimulator_i::getTunerType(const std::string& allocation_id) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
     return frontend_tuner_status[idx].tuner_type;
 }
 
 bool FmRdsSimulator_i::getTunerDeviceControl(const std::string& allocation_id) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
     if (getControlAllocationId(idx) == allocation_id)
@@ -325,18 +383,21 @@ bool FmRdsSimulator_i::getTunerDeviceControl(const std::string& allocation_id) {
 }
 
 std::string FmRdsSimulator_i::getTunerGroupId(const std::string& allocation_id) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
     return frontend_tuner_status[idx].group_id;
 }
 
 std::string FmRdsSimulator_i::getTunerRfFlowId(const std::string& allocation_id) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
     return frontend_tuner_status[idx].rf_flow_id;
 }
 
 void FmRdsSimulator_i::setTunerCenterFrequency(const std::string& allocation_id, double freq) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
     if(allocation_id != getControlAllocationId(idx))
@@ -355,12 +416,15 @@ void FmRdsSimulator_i::setTunerCenterFrequency(const std::string& allocation_id,
 }
 
 double FmRdsSimulator_i::getTunerCenterFrequency(const std::string& allocation_id) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+
     return frontend_tuner_status[idx].center_frequency;
 }
 
 void FmRdsSimulator_i::setTunerBandwidth(const std::string& allocation_id, double bw) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
     if(allocation_id != getControlAllocationId(idx))
@@ -370,12 +434,14 @@ void FmRdsSimulator_i::setTunerBandwidth(const std::string& allocation_id, doubl
     if (bw != MAX_SAMPLE_RATE) {
     	LOG_WARN(FmRdsSimulator_i, "User tried to set bandwidth to: " << bw);
     	LOG_WARN(FmRdsSimulator_i, "Only acceptable bw is " << MAX_SAMPLE_RATE);
+    	throw FRONTEND::BadParameterException();
     }
 
     this->frontend_tuner_status[idx].bandwidth = MAX_SAMPLE_RATE;
 }
 
 double FmRdsSimulator_i::getTunerBandwidth(const std::string& allocation_id) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
     return frontend_tuner_status[idx].bandwidth;
@@ -383,38 +449,61 @@ double FmRdsSimulator_i::getTunerBandwidth(const std::string& allocation_id) {
 
 void FmRdsSimulator_i::setTunerAgcEnable(const std::string& allocation_id, bool enable)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     throw FRONTEND::NotSupportedException("setTunerAgcEnable not supported");
 }
 
 bool FmRdsSimulator_i::getTunerAgcEnable(const std::string& allocation_id)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     throw FRONTEND::NotSupportedException("getTunerAgcEnable not supported");
 }
 
 void FmRdsSimulator_i::setTunerGain(const std::string& allocation_id, float gain)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
+	long idx = getTunerMapping(allocation_id);
+	if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+	if(allocation_id != getControlAllocationId(idx))
+		throw FRONTEND::FrontendException(("ID "+allocation_id+" does not have authorization to modify the tuner").c_str());
+
 	if (digiSim) {
-		digiSim->setGain(gain);
+		try {
+			digiSim->setGain(gain);
+		} catch (OutOfRangeException &ex) {
+			throw FRONTEND::BadParameterException();
+		}
 		this->frontend_tuner_status[0].gain = gain;
 	}
 }
 
 float FmRdsSimulator_i::getTunerGain(const std::string& allocation_id)
 {
-    throw FRONTEND::NotSupportedException("getTunerGain not supported");
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
+	long idx = getTunerMapping(allocation_id);
+	    if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
+
+	if (digiSim) {
+		return digiSim->getGain();
+	}
+
+	return -1;
 }
 
 void FmRdsSimulator_i::setTunerReferenceSource(const std::string& allocation_id, long source)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     throw FRONTEND::NotSupportedException("setTunerReferenceSource not supported");
 }
 
 long FmRdsSimulator_i::getTunerReferenceSource(const std::string& allocation_id)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     throw FRONTEND::NotSupportedException("getTunerReferenceSource not supported");
 }
 
 void FmRdsSimulator_i::setTunerEnable(const std::string& allocation_id, bool enable) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
     if(allocation_id != getControlAllocationId(idx))
@@ -430,12 +519,14 @@ void FmRdsSimulator_i::setTunerEnable(const std::string& allocation_id, bool ena
 }
 
 bool FmRdsSimulator_i::getTunerEnable(const std::string& allocation_id) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
     return frontend_tuner_status[idx].enabled;
 }
 
 void FmRdsSimulator_i::setTunerOutputSampleRate(const std::string& allocation_id, double sr) {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
     if(allocation_id != getControlAllocationId(idx))
@@ -454,6 +545,7 @@ void FmRdsSimulator_i::setTunerOutputSampleRate(const std::string& allocation_id
 }
 
 double FmRdsSimulator_i::getTunerOutputSampleRate(const std::string& allocation_id){
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     long idx = getTunerMapping(allocation_id);
     if (idx < 0) throw FRONTEND::FrontendException("Invalid allocation id");
     return frontend_tuner_status[idx].sample_rate;
@@ -465,20 +557,24 @@ Functions servicing the RFInfo port(s)
 *************************************************************/
 std::string FmRdsSimulator_i::get_rf_flow_id(const std::string& port_name)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     return std::string("none");
 }
 
 void FmRdsSimulator_i::set_rf_flow_id(const std::string& port_name, const std::string& id)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
 }
 
 frontend::RFInfoPkt FmRdsSimulator_i::get_rfinfo_pkt(const std::string& port_name)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
     frontend::RFInfoPkt pkt;
     return pkt;
 }
 
 void FmRdsSimulator_i::set_rfinfo_pkt(const std::string& port_name, const frontend::RFInfoPkt &pkt)
 {
+	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
 }
 

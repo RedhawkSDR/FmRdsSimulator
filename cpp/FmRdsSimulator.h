@@ -59,6 +59,7 @@ class FmRdsSimulator_i : public FmRdsSimulator_base
         bool deviceSetTuning(const frontend::frontend_tuner_allocation_struct &request, frontend_tuner_status_struct_struct &fts, size_t tuner_id);
         bool deviceDeleteTuning(frontend_tuner_status_struct_struct &fts, size_t tuner_id);
         void construct();
+        std::vector<unsigned int> availableSampleRates;
 };
 
 #endif // FMRDSSIMULATOR_IMPL_H
