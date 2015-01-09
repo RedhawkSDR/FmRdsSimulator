@@ -265,6 +265,7 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 		LOG_WARN(FmRdsSimulator_i, "Tuner type does not equal RX_DIGITIZER.  Request denied.");
 		return false;
 	}
+
 	unsigned int sampleRateToSet = 0;
 
 	// User cares about sample rate
@@ -311,8 +312,8 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 
 
 		// if MAX_SAMPLE_RATE < minAcceptable or MAX_SAMPLE_RATE > maxAcceptable we return an error.
-		if (frontend::floatingPointCompare(MAX_SAMPLE_RATE, minAcceptableBandwidth) < -1.0
-				|| frontend::floatingPointCompare(MAX_SAMPLE_RATE, maxAcceptableBandwidth) > 1.0) {
+		if (frontend::floatingPointCompare(MAX_SAMPLE_RATE, minAcceptableBandwidth) < 0
+				|| frontend::floatingPointCompare(MAX_SAMPLE_RATE, maxAcceptableBandwidth) > 0) {
 			LOG_WARN(FmRdsSimulator_i, "Bandwidth cannot be accommodated.  Set bandwidth to: " << MAX_SAMPLE_RATE);
 			return false;
 		}
