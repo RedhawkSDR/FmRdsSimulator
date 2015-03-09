@@ -27,6 +27,8 @@ AC_PROG_INSTALL
 AC_CORBA_ORB
 OSSIE_CHECK_OSSIE
 OSSIE_SDRROOT_AS_PREFIX
+AC_LANG_PUSH([C++])
+AC_CHECK_HEADERS([RfSimulators/RfSimulator.h],,[AC_MSG_ERROR(The RF Simulators header files could not be found.)])
 
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
