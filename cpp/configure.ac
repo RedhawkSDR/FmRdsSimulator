@@ -30,6 +30,13 @@ OSSIE_SDRROOT_AS_PREFIX
 AC_LANG_PUSH([C++])
 AC_CHECK_HEADERS([RfSimulators/RfSimulator.h],,[AC_MSG_ERROR(The RF Simulators header files could not be found.)])
 
+AC_ARG_WITH(domainname,
+    AS_HELP_STRING([--with-domainname=[domain name]], [Provide a domain name to the generated node, defaults to REDHAWK_DEV]),
+    fmrdssim_node_domain=$withval,
+    fmrdssim_node_domain=REDHAWK_DEV)
+AC_SUBST(DOMAINNAME, $fmrdssim_node_domain)
+
+
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Dependencies

@@ -84,6 +84,9 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,redhawk,redhawk,-)
 %dir %{_prefix}/dev/devices/rh/FmRdsSimulator
+%{_prefix}/dev/devices/rh/FmRdsSimulator/nodeconfig.py
+%{_prefix}/dev/devices/rh/FmRdsSimulator/nodeconfig.pyc
+%{_prefix}/dev/devices/rh/FmRdsSimulator/nodeconfig.pyo
 %{_prefix}/dev/devices/rh/FmRdsSimulator/FmRdsSimulator.scd.xml
 %{_prefix}/dev/devices/rh/FmRdsSimulator/FmRdsSimulator.prf.xml
 %{_prefix}/dev/devices/rh/FmRdsSimulator/FmRdsSimulator.spd.xml

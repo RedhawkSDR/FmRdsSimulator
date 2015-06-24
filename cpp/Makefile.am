@@ -24,6 +24,8 @@ bin_PROGRAMS = FmRdsSimulator
 xmldir = $(prefix)/dev/devices/rh/FmRdsSimulator/
 dist_xml_DATA = ../FmRdsSimulator.scd.xml ../FmRdsSimulator.prf.xml ../FmRdsSimulator.spd.xml
 
+confdir = $(prefix)/dev/devices/rh/FmRdsSimulator/
+dist_conf_SCRIPTS = ../nodeconfig.py
 
 distclean-local:
 	rm -f config.*
@@ -48,3 +50,5 @@ FmRdsSimulator_LDADD = $(PROJECTDEPS_LIBS) $(BOOST_LDFLAGS) $(BOOST_THREAD_LIB) 
 FmRdsSimulator_CXXFLAGS = -Wall $(PROJECTDEPS_CFLAGS) $(BOOST_CPPFLAGS) $(INTERFACEDEPS_CFLAGS) $(redhawk_INCLUDES_auto)
 FmRdsSimulator_LDFLAGS = -Wall $(redhawk_LDFLAGS_auto) -lrfsimulators
 
+create-fmrdssim-node: install-am
+    ../nodeconfig.py --inplace --clean --domainname=$(DOMAINNAME)
