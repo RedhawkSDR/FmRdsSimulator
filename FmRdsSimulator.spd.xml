@@ -1,4 +1,5 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
+<!DOCTYPE softpkg PUBLIC "-//JTRS//DTD SCA V2.2.2 SPD//EN" "softpkg.dtd">
 <!--
 This file is protected by Copyright. Please refer to the COPYRIGHT file
 distributed with this source distribution.
@@ -18,9 +19,8 @@ details.
 You should have received a copy of the GNU General Public License along
 with this program.  If not, see http://www.gnu.org/licenses/.
 -->
-<!DOCTYPE softpkg PUBLIC "-//JTRS//DTD SCA V2.2.2 SPD//EN" "softpkg.dtd">
-<softpkg id="DCE:56b9a873-eabc-4484-b18c-8cb5af188924" name="FmRdsSimulator" type="sca_compliant">
-  <title></title>
+<softpkg id="DCE:59a7d548-1a3a-11e5-85d9-3417ebc4aab5" name="rh.FmRdsSimulator" type="sca_compliant">
+  <title/>
   <author>
     <name>null</name>
   </author>

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # This file is protected by Copyright. Please refer to the COPYRIGHT file
 # distributed with this source distribution.
@@ -21,12 +21,12 @@
 
 if [ "$1" = "rpm" ]; then
     # A very simplistic RPM build scenario
-    if [ -e FmRdsSimulator.spec ]; then
+    if [ -e rh.FmRdsSimulator.spec ]; then
         mydir=`dirname $0`
         tmpdir=`mktemp -d`
-        cp -r ${mydir} ${tmpdir}/FmRdsSimulator-1.0.0
-        tar czf ${tmpdir}/FmRdsSimulator-1.0.0.tar.gz --exclude=".svn" -C ${tmpdir} FmRdsSimulator-1.0.0
-        rpmbuild -ta ${tmpdir}/FmRdsSimulator-1.0.0.tar.gz
+        cp -r ${mydir} ${tmpdir}/rh.FmRdsSimulator-1.0.0
+        tar czf ${tmpdir}/rh.FmRdsSimulator-1.0.0.tar.gz --exclude=".svn" -C ${tmpdir} rh.FmRdsSimulator-1.0.0
+        rpmbuild -ta ${tmpdir}/rh.FmRdsSimulator-1.0.0.tar.gz
         rm -rf $tmpdir
     else
         echo "Missing RPM spec file in" `pwd`
@@ -36,7 +36,19 @@ else
     for impl in cpp ; do
         cd $impl
         if [ -e build.sh ]; then
-            ./build.sh $*
+            if [ $# == 1 ]; then
+                if [ $1 == 'clean' ]; then
+                    rm -f Makefile
+                    rm -f config.*
+                    ./build.sh distclean
+                else
+                    ./build.sh $*
+                fi
+            else
+                ./build.sh $*
+            fi
+        elif [ -e Makefile ] && [ Makefile.am -ot Makefile ]; then
+            make $*
         elif [ -e reconf ]; then
             ./reconf && ./configure && make $*
         else

@@ -29,7 +29,7 @@ Prefix:         %{_prefix}
 %define _mandir        %{_prefix}/man
 %define _infodir       %{_prefix}/info
 
-Name:           FmRdsSimulator
+Name:           rh.FmRdsSimulator
 Version:        1.0.0
 Release:        1%{?dist}
 Summary:        Device %{name}
@@ -62,7 +62,7 @@ Device %{name}
 # Implementation cpp
 pushd cpp
 ./reconf
-%define _bindir %{_prefix}/dev/devices/FmRdsSimulator/cpp
+%define _bindir %{_prefix}/dev/devices/rh/FmRdsSimulator/cpp
 %configure
 make %{?_smp_mflags}
 popd
@@ -72,7 +72,7 @@ popd
 rm -rf $RPM_BUILD_ROOT
 # Implementation cpp
 pushd cpp
-%define _bindir %{_prefix}/dev/devices/FmRdsSimulator/cpp
+%define _bindir %{_prefix}/dev/devices/rh/FmRdsSimulator/cpp
 make install DESTDIR=$RPM_BUILD_ROOT
 popd
 
@@ -83,9 +83,9 @@ rm -rf $RPM_BUILD_ROOT
 
 %files
 %defattr(-,redhawk,redhawk,-)
-%dir %{_prefix}/dev/devices/%{name}
-%{_prefix}/dev/devices/%{name}/FmRdsSimulator.scd.xml
-%{_prefix}/dev/devices/%{name}/FmRdsSimulator.prf.xml
-%{_prefix}/dev/devices/%{name}/FmRdsSimulator.spd.xml
-%{_prefix}/dev/devices/%{name}/cpp
+%dir %{_prefix}/dev/devices/rh/FmRdsSimulator
+%{_prefix}/dev/devices/rh/FmRdsSimulator/FmRdsSimulator.scd.xml
+%{_prefix}/dev/devices/rh/FmRdsSimulator/FmRdsSimulator.prf.xml
+%{_prefix}/dev/devices/rh/FmRdsSimulator/FmRdsSimulator.spd.xml
+%{_prefix}/dev/devices/rh/FmRdsSimulator/cpp
 

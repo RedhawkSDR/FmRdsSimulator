@@ -17,11 +17,11 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see http://www.gnu.org/licenses/.
 #
-ossieName = FmRdsSimulator
-bindir = $(prefix)/dev/devices/FmRdsSimulator/cpp/
+ossieName = rh.FmRdsSimulator
+bindir = $(prefix)/dev/devices/rh/FmRdsSimulator/cpp/
 bin_PROGRAMS = FmRdsSimulator
 
-xmldir = $(prefix)/dev/devices/FmRdsSimulator/
+xmldir = $(prefix)/dev/devices/rh/FmRdsSimulator/
 dist_xml_DATA = ../FmRdsSimulator.scd.xml ../FmRdsSimulator.prf.xml ../FmRdsSimulator.spd.xml
 
 
