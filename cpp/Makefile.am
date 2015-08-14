@@ -51,4 +51,4 @@ FmRdsSimulator_CXXFLAGS = -Wall $(PROJECTDEPS_CFLAGS) $(BOOST_CPPFLAGS) $(INTERF
 FmRdsSimulator_LDFLAGS = -Wall $(redhawk_LDFLAGS_auto) -lrfsimulators
 
 create-fmrdssim-node: install-am
-    ../nodeconfig.py --inplace --clean --domainname=$(DOMAINNAME)
+	../nodeconfig.py --inplace --clean --domainname=$(DOMAINNAME)
