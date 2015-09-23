@@ -29,7 +29,6 @@ AC_CORBA_ORB
 OSSIE_CHECK_OSSIE
 OSSIE_SDRROOT_AS_PREFIX
 AC_LANG_PUSH([C++])
-AC_CHECK_HEADERS([RfSimulators/RfSimulator.h],,[AC_MSG_ERROR(The RF Simulators header files could not be found.)])
 
 AC_ARG_WITH(domainname,
     AS_HELP_STRING([--with-domainname=[domain name]], [Provide a domain name to the generated node, defaults to REDHAWK_DEV]),
@@ -41,7 +40,7 @@ AC_SUBST(DOMAINNAME, $fmrdssim_node_domain)
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Dependencies
-PKG_CHECK_MODULES([PROJECTDEPS], [ossie >= 2.0 omniORB4 >= 4.1.0])
+PKG_CHECK_MODULES([PROJECTDEPS], [ossie >= 2.0 omniORB4 >= 4.1.0 librfsimulators >= 1.1])
 PKG_CHECK_MODULES([INTERFACEDEPS], [frontend >= 2.2, bulkio >= 2.0])
 OSSIE_ENABLE_LOG4CXX
 AX_BOOST_BASE([1.41])
