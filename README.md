@@ -1,5 +1,7 @@
 # REDHAWK Basic Devices rh.FmRdsSimulator
 
+## Description
+
 Contains the source and build script for the REDHAWK Basic Devices rh.FmRdsSimulator. This device is designed to be used in conjunction with the libRfSimulators library.  Using the simulator library, this Front End Interfaces compliant REDHAWK device will generate FM modulated mono or stereo audio with RDS encoded PI (Call Sign), PS (Short Text), and RT (Full Text) data.
 
 Additional documentation is available within the libRfSimulators README.
