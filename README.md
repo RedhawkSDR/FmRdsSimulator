@@ -5,6 +5,8 @@ This REDHAWK device is designed to be used in conjunction with the RF Simulators
 Additional documentation is available within the RF Simulator Libraries README.
 
 ## Building & Installation
+This asset requires the libRfSimulators shared library. This must be installed in order to build and run this asset.
+
     ./reconf
     ./configure
     make -j
@@ -21,4 +23,3 @@ This work is protected by Copyright. Please refer to the [Copyright File](COPYRI
 ## License
 
 The FM RDS Simulator Device is licensed under the GNU General Public License (GPL).
-
