@@ -23,14 +23,14 @@ with this program.  If not, see http://www.gnu.org/licenses/.
   <simple id="DCE:cdc5ee18-7ceb-4ae6-bf4c-31f983179b4d" mode="readonly" name="device_kind" type="string">
     <description>This specifies the device kind</description>
     <value>FRONTEND::TUNER</value>
-    <kind kindtype="configure"/>
     <kind kindtype="allocation"/>
+    <kind kindtype="property"/>
     <action type="eq"/>
   </simple>
   <simple id="DCE:0f99b2e4-9903-4631-9846-ff349d18ecfb" mode="readonly" name="device_model" type="string">
     <description> This specifies the specific device</description>
-    <kind kindtype="configure"/>
     <kind kindtype="allocation"/>
+    <kind kindtype="property"/>
     <action type="eq"/>
   </simple>
   <structsequence id="FRONTEND::tuner_status" mode="readonly" name="frontend_tuner_status">
@@ -68,11 +68,10 @@ with this program.  If not, see http://www.gnu.org/licenses/.
         <description>Example Tuner Types: TX, RX, CHANNELIZER, DDC, RX_DIGITIZER, RX_DIGTIZIER_CHANNELIZER</description>
       </simple>
       <simple id="FRONTEND::tuner_status::stream_id" mode="readwrite" name="stream_id" type="string">
-        <kind kindtype="configure"/>
         <action type="external"/>
       </simple>
     </struct>
-    <configurationkind kindtype="configure"/>
+    <configurationkind kindtype="property"/>
   </structsequence>
   <struct id="FRONTEND::listener_allocation" name="frontend_listener_allocation">
     <description>Allocates a listener (subscriber) based off a previous allocation </description>
@@ -132,17 +131,17 @@ False: Does not need control and can just attach to any currently tasked device 
   </struct>
   <simple id="PathToConfiguration" mode="readwrite" name="PathToConfiguration" type="string">
     <value>/usr/share/libFmRdsSimulator/examples</value>
-    <kind kindtype="execparam"/>
+    <kind kindtype="property"/>
     <action type="external"/>
   </simple>
   <simple id="noiseSigma" mode="readwrite" name="noiseSigma" type="float">
-    <value>0.1</value>
-    <kind kindtype="configure"/>
+    <value>0.01</value>
+    <kind kindtype="property"/>
     <action type="external"/>
   </simple>
   <simple id="addAWGN" mode="readwrite" name="addAWGN" type="boolean">
     <value>true</value>
-    <kind kindtype="configure"/>
+    <kind kindtype="property"/>
     <action type="external"/>
   </simple>
 </properties>

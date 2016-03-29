@@ -27,6 +27,8 @@
 *******************************************************************************************/
 
 #include <ossie/CorbaUtils.h>
+#include <CF/cf.h>
+#include <ossie/PropertyMap.h>
 
 #include <frontend/fe_tuner_struct_props.h>
 
@@ -46,67 +48,64 @@ struct frontend_tuner_status_struct_struct : public frontend::default_frontend_t
 inline bool operator>>= (const CORBA::Any& a, frontend_tuner_status_struct_struct& s) {
     CF::Properties* temp;
     if (!(a >>= temp)) return false;
-    CF::Properties& props = *temp;
-    for (unsigned int idx = 0; idx < props.length(); idx++) {
-        if (!strcmp("FRONTEND::tuner_status::allocation_id_csv", props[idx].id)) {
-            if (!(props[idx].value >>= s.allocation_id_csv)) return false;
-        }
-        else if (!strcmp("FRONTEND::tuner_status::bandwidth", props[idx].id)) {
-            if (!(props[idx].value >>= s.bandwidth)) return false;
-        }
-        else if (!strcmp("FRONTEND::tuner_status::center_frequency", props[idx].id)) {
-            if (!(props[idx].value >>= s.center_frequency)) return false;
-        }
-        else if (!strcmp("FRONTEND::tuner_status::enabled", props[idx].id)) {
-            if (!(props[idx].value >>= s.enabled)) return false;
-        }
-        else if (!strcmp("FRONTEND::tuner_status::gain", props[idx].id)) {
-            if (!(props[idx].value >>= s.gain)) return false;
-        }
-        else if (!strcmp("FRONTEND::tuner_status::group_id", props[idx].id)) {
-            if (!(props[idx].value >>= s.group_id)) return false;
-        }
-        else if (!strcmp("FRONTEND::tuner_status::rf_flow_id", props[idx].id)) {
-            if (!(props[idx].value >>= s.rf_flow_id)) return false;
-        }
-        else if (!strcmp("FRONTEND::tuner_status::sample_rate", props[idx].id)) {
-            if (!(props[idx].value >>= s.sample_rate)) return false;
-        }
-        else if (!strcmp("FRONTEND::tuner_status::tuner_type", props[idx].id)) {
-            if (!(props[idx].value >>= s.tuner_type)) return false;
-        }
-        else if (!strcmp("FRONTEND::tuner_status::stream_id", props[idx].id)) {
-            if (!(props[idx].value >>= s.stream_id)) return false;
-        }
+    const redhawk::PropertyMap& props = redhawk::PropertyMap::cast(*temp);
+    if (props.contains("FRONTEND::tuner_status::allocation_id_csv")) {
+        if (!(props["FRONTEND::tuner_status::allocation_id_csv"] >>= s.allocation_id_csv)) return false;
+    }
+    if (props.contains("FRONTEND::tuner_status::bandwidth")) {
+        if (!(props["FRONTEND::tuner_status::bandwidth"] >>= s.bandwidth)) return false;
+    }
+    if (props.contains("FRONTEND::tuner_status::center_frequency")) {
+        if (!(props["FRONTEND::tuner_status::center_frequency"] >>= s.center_frequency)) return false;
+    }
+    if (props.contains("FRONTEND::tuner_status::enabled")) {
+        if (!(props["FRONTEND::tuner_status::enabled"] >>= s.enabled)) return false;
+    }
+    if (props.contains("FRONTEND::tuner_status::gain")) {
+        if (!(props["FRONTEND::tuner_status::gain"] >>= s.gain)) return false;
+    }
+    if (props.contains("FRONTEND::tuner_status::group_id")) {
+        if (!(props["FRONTEND::tuner_status::group_id"] >>= s.group_id)) return false;
+    }
+    if (props.contains("FRONTEND::tuner_status::rf_flow_id")) {
+        if (!(props["FRONTEND::tuner_status::rf_flow_id"] >>= s.rf_flow_id)) return false;
+    }
+    if (props.contains("FRONTEND::tuner_status::sample_rate")) {
+        if (!(props["FRONTEND::tuner_status::sample_rate"] >>= s.sample_rate)) return false;
+    }
+    if (props.contains("FRONTEND::tuner_status::tuner_type")) {
+        if (!(props["FRONTEND::tuner_status::tuner_type"] >>= s.tuner_type)) return false;
+    }
+    if (props.contains("FRONTEND::tuner_status::stream_id")) {
+        if (!(props["FRONTEND::tuner_status::stream_id"] >>= s.stream_id)) return false;
     }
     return true;
-};
+}
 
 inline void operator<<= (CORBA::Any& a, const frontend_tuner_status_struct_struct& s) {
-    CF::Properties props;
-    props.length(10);
-    props[0].id = CORBA::string_dup("FRONTEND::tuner_status::allocation_id_csv");
-    props[0].value <<= s.allocation_id_csv;
-    props[1].id = CORBA::string_dup("FRONTEND::tuner_status::bandwidth");
-    props[1].value <<= s.bandwidth;
-    props[2].id = CORBA::string_dup("FRONTEND::tuner_status::center_frequency");
-    props[2].value <<= s.center_frequency;
-    props[3].id = CORBA::string_dup("FRONTEND::tuner_status::enabled");
-    props[3].value <<= s.enabled;
-    props[4].id = CORBA::string_dup("FRONTEND::tuner_status::gain");
-    props[4].value <<= s.gain;
-    props[5].id = CORBA::string_dup("FRONTEND::tuner_status::group_id");
-    props[5].value <<= s.group_id;
-    props[6].id = CORBA::string_dup("FRONTEND::tuner_status::rf_flow_id");
-    props[6].value <<= s.rf_flow_id;
-    props[7].id = CORBA::string_dup("FRONTEND::tuner_status::sample_rate");
-    props[7].value <<= s.sample_rate;
-    props[8].id = CORBA::string_dup("FRONTEND::tuner_status::tuner_type");
-    props[8].value <<= s.tuner_type;
-    props[9].id = CORBA::string_dup("FRONTEND::tuner_status::stream_id");
-    props[9].value <<= s.stream_id;
+    redhawk::PropertyMap props;
+ 
+    props["FRONTEND::tuner_status::allocation_id_csv"] = s.allocation_id_csv;
+ 
+    props["FRONTEND::tuner_status::bandwidth"] = s.bandwidth;
+ 
+    props["FRONTEND::tuner_status::center_frequency"] = s.center_frequency;
+ 
+    props["FRONTEND::tuner_status::enabled"] = s.enabled;
+ 
+    props["FRONTEND::tuner_status::gain"] = s.gain;
+ 
+    props["FRONTEND::tuner_status::group_id"] = s.group_id;
+ 
+    props["FRONTEND::tuner_status::rf_flow_id"] = s.rf_flow_id;
+ 
+    props["FRONTEND::tuner_status::sample_rate"] = s.sample_rate;
+ 
+    props["FRONTEND::tuner_status::tuner_type"] = s.tuner_type;
+ 
+    props["FRONTEND::tuner_status::stream_id"] = s.stream_id;
     a <<= props;
-};
+}
 
 inline bool operator== (const frontend_tuner_status_struct_struct& s1, const frontend_tuner_status_struct_struct& s2) {
     if (s1.allocation_id_csv!=s2.allocation_id_csv)
@@ -130,10 +129,10 @@ inline bool operator== (const frontend_tuner_status_struct_struct& s1, const fro
     if (s1.stream_id!=s2.stream_id)
         return false;
     return true;
-};
+}
 
 inline bool operator!= (const frontend_tuner_status_struct_struct& s1, const frontend_tuner_status_struct_struct& s2) {
     return !(s1==s2);
-};
+}
 
 #endif // STRUCTPROPS_H

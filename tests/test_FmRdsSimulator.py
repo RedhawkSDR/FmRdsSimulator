@@ -18,13 +18,14 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see http://www.gnu.org/licenses/.
 #
+
 import unittest
 import ossie.utils.testing
 import os
 from omniORB import any
 
 class ResourceTests(ossie.utils.testing.ScaComponentTestCase):
-    """Test for all resource implementations in FmRdsSimulator"""
+    """Test for all resource implementations in rh.FmRdsSimulator"""
 
     def testScaBasicBehavior(self):
         #######################################################################

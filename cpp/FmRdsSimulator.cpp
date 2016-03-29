@@ -173,6 +173,8 @@ void FmRdsSimulator_i::initDigitizer() {
 	digiSim = RfSimulators::RfSimulatorFactory::createFmRdsSimulator();
 	digiSim->setCenterFrequencyRange(MIN_FREQ_RANGE, MAX_FREQ_RANGE);
 	digiSim->setGainRange(MIN_GAIN_RANGE, MAX_GAIN_RANGE);
+	digiSim->addNoise(addAWGN);
+	digiSim->setNoiseSigma(noiseSigma);
 
 	switch (this->log_level())
 	{

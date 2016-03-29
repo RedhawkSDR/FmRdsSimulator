@@ -28,7 +28,6 @@ AC_PROG_INSTALL
 AC_CORBA_ORB
 OSSIE_CHECK_OSSIE
 OSSIE_SDRROOT_AS_PREFIX
-AC_LANG_PUSH([C++])
 
 AC_ARG_WITH(domainname,
     AS_HELP_STRING([--with-domainname=[domain name]], [Provide a domain name to the generated node, defaults to REDHAWK_DEV]),
@@ -36,11 +35,9 @@ AC_ARG_WITH(domainname,
     fmrdssim_node_domain=REDHAWK_DEV)
 AC_SUBST(DOMAINNAME, $fmrdssim_node_domain)
 
-
 m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 
 # Dependencies
-export PKG_CONFIG_PATH="$PKG_CONFIG_PATH:/usr/local/lib/pkgconfig"
 PKG_CHECK_MODULES([PROJECTDEPS], [ossie >= 2.0 omniORB4 >= 4.1.0 librfsimulators >= 1.1])
 PKG_CHECK_MODULES([INTERFACEDEPS], [frontend >= 2.2, bulkio >= 2.0])
 OSSIE_ENABLE_LOG4CXX

@@ -17,8 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/.
  */
-#ifndef FMRDSSIMULATOR_IMPL_BASE_H
-#define FMRDSSIMULATOR_IMPL_BASE_H
+#ifndef FMRDSSIMULATOR_BASE_IMPL_BASE_H
+#define FMRDSSIMULATOR_BASE_IMPL_BASE_H
 
 #include <boost/thread.hpp>
 #include <frontend/frontend.h>
@@ -29,7 +29,6 @@
 #include "struct_props.h"
 
 #define BOOL_VALUE_HERE 0
-#define DOUBLE_VALUE_HERE 0
 
 class FmRdsSimulator_base : public frontend::FrontendTunerDevice<frontend_tuner_status_struct_struct>, public virtual frontend::digital_tuner_delegation, public virtual frontend::rfinfo_delegation, protected ThreadedComponent
 {
@@ -56,20 +55,27 @@ class FmRdsSimulator_base : public frontend::FrontendTunerDevice<frontend_tuner_
 
     protected:
         // Member variables exposed as properties
+        /// Property: PathToConfiguration
         std::string PathToConfiguration;
+        /// Property: noiseSigma
         float noiseSigma;
+        /// Property: addAWGN
         bool addAWGN;
 
         // Ports
+        /// Port: RFInfo_in
         frontend::InRFInfoPort *RFInfo_in;
+        /// Port: DigitalTuner_in
         frontend::InDigitalTunerPort *DigitalTuner_in;
+        /// Port: dataFloat_out
         bulkio::OutFloatPort *dataFloat_out;
 
         std::map<std::string, std::string> listeners;
 
         virtual void setNumChannels(size_t num);
+        virtual void setNumChannels(size_t num, std::string tuner_type);
 
     private:
         void construct();
 };
-#endif // FMRDSSIMULATOR_IMPL_BASE_H
+#endif // FMRDSSIMULATOR_BASE_IMPL_BASE_H
