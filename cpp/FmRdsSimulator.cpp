@@ -168,7 +168,8 @@ void FmRdsSimulator_i::initDigitizer() {
 		digiSim = NULL;
 	}
 
-	cb = new MyCallBackClass(dataFloat_out, &frontend_tuner_status);
+	cb = new MyCallBackClass(dataFloat_out, &frontend_tuner_status,this->identifier() );
+
 
 	digiSim = RfSimulators::RfSimulatorFactory::createFmRdsSimulator();
 	digiSim->setCenterFrequencyRange(MIN_FREQ_RANGE, MAX_FREQ_RANGE);
@@ -372,10 +373,11 @@ bool FmRdsSimulator_i::deviceDeleteTuning(frontend_tuner_status_struct_struct &f
     return true if the tune deletion succeeded, and false if it failed
     ************************************************************/
 
-	// TODO: Should I push EOS?
+
 	if (digiSim) {
 		digiSim->stop();
 	}
+	cb->pushEOS();
 
     fts.center_frequency = 0.0;
     fts.sample_rate = 0.0;

@@ -32,12 +32,14 @@
 
 class MyCallBackClass: public RfSimulators::CallbackInterface {
 public:
-	MyCallBackClass(bulkio::OutFloatPort * outputPort, std::vector<frontend_tuner_status_struct_struct> *fts);
+	MyCallBackClass(bulkio::OutFloatPort * outputPort, std::vector<frontend_tuner_status_struct_struct> *fts,char* identifier);
 	virtual ~MyCallBackClass();
+	void pushEOS();
 	void dataDelivery(std::valarray< std::complex<float> > &samples);
 	void pushUpdatedSRI();
 
 private:
+	char* identifier;
 	bulkio::OutFloatPort * outputPort;
 	bool pushSRI;
 	std::vector<frontend_tuner_status_struct_struct> *fts;

@@ -28,14 +28,24 @@
 #include <vector>
 #include <complex>
 
-MyCallBackClass::MyCallBackClass(bulkio::OutFloatPort * outputPort, std::vector<frontend_tuner_status_struct_struct> *fts) {
+MyCallBackClass::MyCallBackClass(bulkio::OutFloatPort * outputPort, std::vector<frontend_tuner_status_struct_struct> *fts,char* identifier) {
 	this->outputPort = outputPort;
     this->fts = fts;
-
+    this->identifier = identifier;
     pushSRI = true;
 }
 
 MyCallBackClass::~MyCallBackClass() {
+}
+
+void MyCallBackClass::pushEOS() {
+	struct timeval tmp_time;
+	struct timezone tmp_tz;
+	gettimeofday(&tmp_time, &tmp_tz);
+	BULKIO::PrecisionUTCTime my_tmp_time = bulkio::time::utils::create(tmp_time.tv_sec,	tmp_time.tv_usec / 1e6);
+	std::vector<float> data;
+	data.resize(0);
+	outputPort->pushPacket(data, my_tmp_time,true, (*fts)[0].stream_id);
 }
 
 void MyCallBackClass::pushUpdatedSRI() {
@@ -76,12 +86,21 @@ void MyCallBackClass::dataDelivery(std::valarray< std::complex<float> > &samples
         sri.blocking = false;
         sri.streamID = (*fts)[0].stream_id.c_str();
 
-		sri.keywords.length(2);
+		sri.keywords.length(5);
 		sri.keywords[0].id = "CHAN_RF";
 		sri.keywords[0].value <<= (*fts)[0].center_frequency;
 
 		sri.keywords[1].id = "COL_RF";
 		sri.keywords[1].value <<= (*fts)[0].center_frequency;
+
+		sri.keywords[2].id = "FRONTEND::BANDWIDTH";
+		sri.keywords[2].value <<= (*fts)[0].bandwidth;
+
+		sri.keywords[3].id = "FRONTEND::RF_FLOW_ID";
+		sri.keywords[3].value <<= (*fts)[0].rf_flow_id;
+
+		sri.keywords[4].id = "FRONTEND::DEVICE_ID";
+		sri.keywords[4].value <<= identifier;
 
 
 		outputPort->pushSRI(sri);
