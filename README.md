@@ -46,6 +46,10 @@ visible 2.28 Mhz bandwidth (even if bandwidth is set smaller).  Since each of
 these threads is resampling a wav file, FM modulating, encoding RDS, and
 upsampling to 2.28 Msps a non-trivial amount of CPU is used. 
 
+## FEI Compliance Test Results
+
+See the [FEI Compliance Results](tests/FEI_Compliance_Results.md) document.
+
 ## Copyrights
 
 This work is protected by Copyright. Please refer to the
