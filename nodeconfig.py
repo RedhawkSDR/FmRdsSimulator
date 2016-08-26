@@ -236,8 +236,8 @@ if __name__ == "__main__":
                       help="Path to the sdr root; if none is given, ${SDRROOT} is used.")
     parser.add_option("--nodename", dest="nodename", default="rh.DevMgr_FmRdsSimulator_%s" % socket.gethostname(),
                       help="Desired nodename, if none is given rh.DevMgr_FmRdsSimulator_${HOST} is used")
-    parser.add_option("--inplace", dest="inplace", default=False, action="store_true",
-                      help="Update the rh.FmRdsSimulator profile in-place; default is to create a rh.FmRdsSimulator configuration in the node folder")
+    parser.add_option("--noinplace", dest="inplace", default=True, action="store_false",
+                      help="Create rh.FmRdsSimulator configuration in the node folder; default is to update the rh.FmRdsSimulator profile in-place.")
     parser.add_option("--fmrdssimpath", dest="fmrdssimpath", default="/devices/rh/FmRdsSimulator",
                       help="The device manager file system absolute path to the rh.FmRdsSimulator, default '/devices/rh/FmRdsSimulator'")
     parser.add_option("--silent", dest="silent", default=False, action="store_true",
