@@ -31,7 +31,7 @@ Prefix:         %{_prefix}
 
 Name:           rh.FmRdsSimulator
 Version:        2.0.2
-Release:        2%{?dist}
+Release:        3%{?dist}
 Summary:        Device %{name}
 
 Group:          REDHAWK/Devices

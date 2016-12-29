@@ -16,11 +16,11 @@ The test may take several minutes to perform the 258 checks when successful. It 
 
 ```
 Report Statistics:
-   Checks that returned "FAIL" .................. 3
+   Checks that returned "FAIL" .................. 2
    Checks that returned "WARN" .................. 1
    Checks that returned "info" .................. 1
    Checks that returned "no" .................... 16
-   Checks that returned "ok" .................... 199
+   Checks that returned "ok" .................... 200
    Checks with silent results ................... 38
    Total checks made ............................ 258
 ```
@@ -50,7 +50,7 @@ tuner_status has UNKNOWN field FRONTEND::tuner_status::stream_id............WARN
 
 ### `FAIL` Details
 
-There are 3 checks that report `FAIL` with the FmRdsSimulator, and this is known.
+There are 2 checks that report `FAIL` with the FmRdsSimulator, and this is known.
 
 #### Multi-out port checks
 
@@ -61,5 +61,4 @@ dataFloat_out: Did not receive data from tuner allocation with wrong
      alloc_id (multiport test)..............................................FAIL
 dataFloat_out: Did not receive correct SRI from tuner allocation with
      wrong alloc_id (multiport test)........................................FAIL
-dataFloat_out: Listener received EOS after deallocation of listener.........FAIL
 ```
