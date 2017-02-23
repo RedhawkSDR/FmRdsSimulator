@@ -127,6 +127,15 @@ class FrontendTunerTests(unittest.TestCase):
                 'dataXML':'xmlIn',
                 'dataChar':'charIn',
                 'dataFile':'fileIn'}
+
+    from ossie.cf import CF
+    from omniORB import any
+
+    @classmethod
+    def _query(cls, props=tuple() ):
+        pl = [CF.DataType( id=p, value=any.to_any(None)) for p in props ]
+        qr = cls.dut.query( pl )
+        return ossie.properties.props_to_dict(qr)
     
     @classmethod
     def devicePreLaunch(self):
@@ -180,7 +189,7 @@ class FrontendTunerTests(unittest.TestCase):
             self.dut = sb.Component(DEVICE_INFO['SPD'],execparams=execparams,configure=configure,initialize=initialize,impl=IMPL_ID)
         
         self.dut_ref = self.dut.ref._narrow(CF.Device)
-        
+
         ### device-specific post-launch commands
         self.devicePostLaunch()
 
@@ -311,14 +320,14 @@ class FrontendTunerTests(unittest.TestCase):
         #pp(props)
         self.check(props.has_key('DCE:cdc5ee18-7ceb-4ae6-bf4c-31f983179b4d'), True, 'Has device_kind property')
         self.check(props['DCE:cdc5ee18-7ceb-4ae6-bf4c-31f983179b4d'], 'FRONTEND::TUNER', 'device_kind = FRONTEND::TUNER')
-         
+        
     def testFRONTEND_1_2(self):
         ''' ALL 1.2 Verify that there is a device_model property
         '''
         props = self.dut.query([])
         props = properties.props_to_dict(props)
         self.check(props.has_key('DCE:0f99b2e4-9903-4631-9846-ff349d18ecfb'), True, 'Has device_model property')
-         
+        
     def testFRONTEND_1_3(self):
         ''' ALL 1.3 Verify that there is a FRONTEND Status property
         '''
@@ -330,15 +339,15 @@ class FrontendTunerTests(unittest.TestCase):
         if (len(props['FRONTEND::tuner_status']) == 0):
                 print '\nERROR - tuner_status is empty. Check that the unit test is configured to reach the target device hardware.\n'
                 self.check(False,True,'\nERROR - tuner_status is empty. Check that the unit test is configured to reach the target device hardware.')
-                 
+                
         success = True
         for field in self.FE_tuner_status_fields_req:
             if not self.check(props['FRONTEND::tuner_status'][-1].has_key(field), True, 'tuner_status has %s required field'%field):
                 success = False
         if not success:
             self.check(False,True,'\nERROR - tuner_status does not have all required fields.')
-             
-         
+            
+        
     def testFRONTEND_1_4(self):
         ''' ALL 1.4 Verify there is a tuner port
         '''
@@ -357,9 +366,9 @@ class FrontendTunerTests(unittest.TestCase):
         if (DigitalTuner==None) and (AnalogTuner==None):
             reason = 'none'
         self.check( (DigitalTuner== None)^(AnalogTuner== None), True, 'Has an analog or digital tuner input port (%s)'%reason)   
-         
-     
-         
+        
+    
+        
     def testFRONTEND_3_1_1(self):
         ''' RX_DIG 1.1 Allocate a single tuner
         '''
@@ -370,11 +379,15 @@ class FrontendTunerTests(unittest.TestCase):
             print 'RX_DIG 1.1 FAILURE - Can allocate single RX_DIGITIZER'
             pp(t1)
             pp(t1Alloc)
-         
+        
         # Deallocate the tuner
-        self.dut_ref.deallocateCapacity(t1Alloc)
-        self.check(True, True, 'Deallocated RX_DIGITIZER without error')
-         
+        error = False
+        try:
+            self.dut_ref.deallocateCapacity(t1Alloc)
+        except:
+            error = True
+        self.check(error, False, 'Deallocated RX_DIGITIZER without error')
+        
     def testFRONTEND_3_1_2(self): 
         ''' RX_DIG 1.2 Allocate to max tuners
         '''
@@ -388,17 +401,21 @@ class FrontendTunerTests(unittest.TestCase):
                 pp(ts)
                 pp(tAlloc)
         self.check(True, True, 'Allocated to max RX_DIGITIZERs')
-         
-        # deallocate everything        
+        
+        # deallocate everything     
+        error = False   
         for t in ts:
-            tAlloc = self._generateAlloc(t)
-            self.dut_ref.deallocateCapacity(tAlloc)
-        self.check(True, True, 'Deallocated all RX_DIGITIZER tuners')
-         
+            try:
+                tAlloc = self._generateAlloc(t)
+                self.dut_ref.deallocateCapacity(tAlloc)
+            except:
+                error = True
+        self.check(error, False, 'Deallocated all RX_DIGITIZER tuners')
+        
     def testFRONTEND_3_1_3(self): 
         ''' RX_DIG 1.3 Verify over-allocation failure
         '''
-         
+        
         # Allocate to max tuners
         ts = []
         for t in range(0,self.device_discovery['RX_DIGITIZER']):
@@ -410,7 +427,7 @@ class FrontendTunerTests(unittest.TestCase):
                 pp(ts)
                 pp(tAlloc)
         self.check(True, True, 'Allocated to max RX_DIGITIZERs')
-         
+        
         # Verify over-allocation failure
         over_t = self._generateRD()
         over_tAlloc = self._generateAlloc(over_t)
@@ -420,13 +437,22 @@ class FrontendTunerTests(unittest.TestCase):
             pp(ts)
             pp(over_t)
             pp(over_tAlloc)
-        self.dut_ref.deallocateCapacity(over_tAlloc)
-         
+        
+        try:
+            self.dut_ref.deallocateCapacity(over_tAlloc)
+        except:
+            # It's fine if this fails b/c the alloc should have failed, but just in case
+            pass
+        
         # deallocate everything        
+        error = False   
         for t in ts:
-            tAlloc = self._generateAlloc(t)
-            self.dut_ref.deallocateCapacity(tAlloc)
-        self.check(True, True, 'Deallocated all RX_DIGITIZER tuners')
+            try:
+                tAlloc = self._generateAlloc(t)
+                self.dut_ref.deallocateCapacity(tAlloc)
+            except:
+                error = True
+        self.check(error, False, 'Deallocated all RX_DIGITIZER tuners')
         
     def testFRONTEND_3_2_01(self):
         ''' RX_DIG 2.1 Verify InvalidCapacityException on repeat Alloc ID
@@ -448,7 +474,13 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False, True, 'Allocate second %s with same alloc id check (produces %s exception, should produce InvalidCapacity exception)'%(ttype,e.__class__.__name__))
         else:
             self.check(False, True, 'Allocate second %s with same alloc id check (returns %s, should produce InvalidCapacity exception)'%(ttype,retval))
-        self.dut_ref.deallocateCapacity(tAlloc) # this will deallocate the original successful allocation
+        
+        error = False
+        try:
+            self.dut_ref.deallocateCapacity(tAlloc) # this will deallocate the original successful allocation
+        except:
+            error = True
+        self.check(error, False, 'Deallocated RX_DIGITIZER without error')
         
     def testFRONTEND_3_2_02(self):
         ''' RX_DIG 2.2 Verify InvalidCapacityException on malformed request (missing alloc ID)
@@ -466,9 +498,7 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False, True, 'Allocate %s with malformed request (alloc_id="") check (produces %s exception, should produce InvalidCapacity exception)'%(ttype,e.__class__.__name__))
         else:
             self.check(False, True, 'Allocate %s with malformed request (alloc_id="") check (returns %s, should produce InvalidCapacity exception)'%(ttype,retval))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
-         
+            
     def testFRONTEND_3_2_03(self):
         ''' RX_DIG 2.3 Verify InvalidCapacityException on malformed request (missing alloc ID)
         '''
@@ -485,8 +515,7 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False, True, 'Allocate %s with malformed request (alloc_id=None) check (produces %s exception, should produce InvalidCapacity exception)'%(ttype,e.__class__.__name__))
         else:
             self.check(False, True, 'Allocate %s with malformed request (alloc_id=None) check (returns %s, should produce InvalidCapacity exception)'%(ttype,retval))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+    
     def testFRONTEND_3_2_04(self):
         ''' RX_DIG 2.4 Verify failure on alloc with invalid group id (generate new uuid)
         '''
@@ -500,8 +529,7 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False, True, 'Allocate %s with invalid GROUP_ID check (produces %s exception, should return False)'%(ttype,e.__class__.__name__))
         else:
             self.check(False, retval, 'Allocate %s with invalid GROUP_ID check'%(ttype))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_05(self):
         ''' RX_DIG 2.5 Verify failure on alloc with invalid rf flow id (generate new uuid)
         '''
@@ -515,8 +543,7 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False, True, 'Allocate %s with invalid RF_FLOW_ID check (produces %s exception, should return False)'%(ttype,e.__class__.__name__))
         else:
             self.check(False, retval, 'Allocate %s with invalid RF_FLOW_ID check'%(ttype))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_06(self):
         ''' RX_DIG 2.6 Allocate Listener via listener struct
         '''
@@ -529,7 +556,7 @@ class FrontendTunerTests(unittest.TestCase):
             print 'RX_DIG 2.6 FAILURE - Allocate controller %s'%(ttype)
             pp(tuner)
             pp(tAlloc)
-         
+        
         tListener = self._generateListener(tuner)
         tListenerAlloc = self._generateListenerAlloc(tListener)
         if not self.check(self.dut_ref.allocateCapacity(tListenerAlloc), True, 'Allocate listener %s using listener allocation struct'%(ttype)) and DEBUG_LEVEL >= 4:
@@ -539,9 +566,9 @@ class FrontendTunerTests(unittest.TestCase):
             pp(tAlloc)
             pp(tListener)
             pp(tListenerAlloc)
-         
+        
         print "DEBUG -- done with allocations, now time to deallocate"
-         
+        
         # Deallocate listener using listener allocation struct
         try:
             self.dut_ref.deallocateCapacity(tListenerAlloc)
@@ -549,19 +576,21 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False, True, 'Deallocated listener %s using listener allocation struct without error'%(ttype))
         else:
             self.check(True, True, 'Deallocated listener %s using listener allocation struct without error'%(ttype))
-             
-        print "DEBUG -- done with deallocation of listener, now time to deallocate the controller"
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+            
+        #print "DEBUG -- done with deallocation of listener, now time to deallocate the controller"
+        try:
+            self.dut_ref.deallocateCapacity(tAlloc)
+        except Exception,e:
+            self.check(False, True, 'Deallocated controller %s using controller allocation struct without error'%(ttype))
+        else:
+            self.check(True, True, 'Deallocated controller %s using controller allocation struct without error'%(ttype))
+        
     def testFRONTEND_3_2_07(self):
         ''' RX_DIG 2.7 Allocate Listener via tuner allocation struct
         '''
         tuner = self._generateRD()
         ttype='RX_DIGITIZER'
         tAlloc = self._generateAlloc(tuner)
-
-
-        pp(tuner)
         if not self.dut_ref.allocateCapacity(tAlloc) and DEBUG_LEVEL >= 4:
             # Do some DEBUG
             print 'RX_DIG 2.7 FAILURE - Allocate controller %s'%(ttype)
@@ -575,7 +604,6 @@ class FrontendTunerTests(unittest.TestCase):
         tListener['CF'] = tunerStatusProp['FRONTEND::tuner_status::center_frequency']
         tListener['BW'] = tunerStatusProp['FRONTEND::tuner_status::bandwidth']
         tListenerAlloc = self._generateAlloc(tListener)
-
         if not self.check(self.dut_ref.allocateCapacity(tListenerAlloc), True, 'Allocate listener %s using tuner allocation struct'%(ttype)) and DEBUG_LEVEL >= 4:
             # Do some DEBUG
             print 'RX_DIG 2.7 FAILURE - Allocate listener %s using tuner allocation struct'%(ttype)
@@ -583,7 +611,7 @@ class FrontendTunerTests(unittest.TestCase):
             pp(tAlloc)
             pp(tListener)
             pp(tListenerAlloc)
-         
+        
         # Deallocate listener using tuner allocation struct
         try:
             self.dut_ref.deallocateCapacity(tListenerAlloc)
@@ -591,8 +619,13 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False, True, 'Deallocated listener %s using tuner allocation struct without error'%(ttype))
         else:
             self.check(True, True, 'Deallocated listener %s using tuner allocation struct without error'%(ttype))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        try:
+            self.dut_ref.deallocateCapacity(tAlloc)
+        except Exception,e:
+            self.check(False, True, 'Deallocated controller %s using controller allocation struct without error'%(ttype))
+        else:
+            self.check(True, True, 'Deallocated controller %s using controller allocation struct without error'%(ttype))
+        
     def testFRONTEND_3_2_08(self):
         ''' RX_DIG 2.8 Verify failure on listener alloc w/o matching existing alloc id
         '''
@@ -614,9 +647,12 @@ class FrontendTunerTests(unittest.TestCase):
             pp(tAlloc)
             pp(tListener)
             pp(tListenerAlloc)
-        self.dut_ref.deallocateCapacity(tListenerAlloc)
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        try:
+            self.dut_ref.deallocateCapacity(tAlloc)
+            self.dut_ref.deallocateCapacity(tListenerAlloc)
+        except:
+            pass # Don't care if pass/fail in this test
+        
     def testFRONTEND_3_2_09(self):
         ''' RX_DIG 2.9 Verify failure on listener alloc w/o suitable existing channel (bad freq)
         '''
@@ -633,9 +669,12 @@ class FrontendTunerTests(unittest.TestCase):
         tListener['CONTROL'] = False
         tListenerAlloc = self._generateAlloc(tListener)
         self.check(self.dut_ref.allocateCapacity(tListenerAlloc), False, 'Allocate listener %s using tuner allocation struct without suitable controller %s check'%(ttype,ttype))
-        self.dut_ref.deallocateCapacity(tListenerAlloc)
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        try:
+            self.dut_ref.deallocateCapacity(tAlloc)
+            self.dut_ref.deallocateCapacity(tListenerAlloc)
+        except:
+            pass # Don't care if pass/fail in this test
+        
     def testFRONTEND_3_2_10(self):
         ''' RX_DIG 2.10 Verify listener allocations are deallocated following deallocation of controlling allocation
         '''
@@ -654,39 +693,36 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(True, True, 'Deallocated controller %s which has a listener allocation'%(ttype))
         has_listener = self._tunerStatusHasAllocId(tListener['LISTENER_ID'])
         self.check(has_listener, False, 'Listener %s deallocated  as result of controller %s deallocation'%(ttype,ttype))
-        self.dut_ref.deallocateCapacity(tListenerAlloc)
-         
+        
     def testFRONTEND_3_2_11(self):
         ''' RX_DIG 2.11 allocate below minimum center frequency
         '''
         tuner = self._generateRD()
         ttype='RX_DIGITIZER'
         low=DEVICE_INFO['RX_DIGITIZER']['CF_MIN']
-         
+        
         tuner['CF'] = float(int(low / 2.0))
         tAlloc = self._generateAlloc(tuner)
         self.check(self.dut_ref.allocateCapacity(tAlloc), False, 'Allocate %s below lowest frequency in range(%s < %s)'%(ttype,tuner['CF'],low))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_12(self):
         ''' RX_DIG 2.12 allocate above maximum center frequency
         '''
         tuner = self._generateRD()
         ttype='RX_DIGITIZER'
         high=DEVICE_INFO['RX_DIGITIZER']['CF_MAX']
-         
+        
         tuner['CF'] = float(high * 2.0)
         tAlloc = self._generateAlloc(tuner)
         self.check(self.dut_ref.allocateCapacity(tAlloc), False, 'Allocate %s above highest frequency in range(%s > %s)'%(ttype,tuner['CF'],high))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_13a(self):
         ''' RX_DIG 2.13a allocate at minimum center frequency
         '''
         tuner = self._generateRD()
         ttype='RX_DIGITIZER'
         low=DEVICE_INFO['RX_DIGITIZER']['CF_MIN']
-         
+        
         tuner['CF'] = float(low)
         tAlloc = self._generateAlloc(tuner)
         if not self.check(self.dut_ref.allocateCapacity(tAlloc), True, 'Allocate %s at lowest center frequency in range (%s)'%(ttype,low)) and DEBUG_LEVEL >= 4:
@@ -694,8 +730,7 @@ class FrontendTunerTests(unittest.TestCase):
             print 'RX_DIG 2.13a FAILURE'
             pp(tuner)
             pp(tAlloc)
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_13b(self):
         ''' RX_DIG 2.13b allocate just below minimum center frequency (partial coverage, should fail)
         '''
@@ -705,7 +740,7 @@ class FrontendTunerTests(unittest.TestCase):
         bw=DEVICE_INFO['RX_DIGITIZER']['BW_MIN']
         sr=DEVICE_INFO['RX_DIGITIZER']['SR_MIN']
         bw_sr = max(bw,sr)
-        print low,bw,sr 
+        
         tuner['CF'] = float(low-bw_sr/2.0)
         tuner['BW'] = float(bw)
         tuner['SR'] = float(sr)
@@ -715,15 +750,14 @@ class FrontendTunerTests(unittest.TestCase):
             print 'RX_DIG 2.13b FAILURE'
             pp(tuner)
             pp(tAlloc)
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_14a(self):
         ''' RX_DIG 2.14a allocate at maximum center frequency
         '''
         tuner = self._generateRD()
         ttype='RX_DIGITIZER'
         high=DEVICE_INFO['RX_DIGITIZER']['CF_MAX']
-         
+        
         tuner['CF'] = float(high)
         tAlloc = self._generateAlloc(tuner)
         if not self.check(self.dut_ref.allocateCapacity(tAlloc), True, 'Allocate %s at highest center frequency in range(%s)'%(ttype,high)) and DEBUG_LEVEL >= 4:
@@ -731,8 +765,7 @@ class FrontendTunerTests(unittest.TestCase):
             print 'RX_DIG 2.14a FAILURE'
             pp(tuner)
             pp(tAlloc)
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_14b(self):
         ''' RX_DIG 2.14b allocate just above maximum center frequency (partial coverage, should fail)
         '''
@@ -742,7 +775,7 @@ class FrontendTunerTests(unittest.TestCase):
         bw=DEVICE_INFO['RX_DIGITIZER']['BW_MIN']
         sr=DEVICE_INFO['RX_DIGITIZER']['SR_MIN']
         bw_sr = max(bw,sr)
-         
+        
         tuner['CF'] = float(high+bw_sr/2.0)
         tuner['BW'] = float(bw)
         tuner['SR'] = float(sr)
@@ -752,53 +785,49 @@ class FrontendTunerTests(unittest.TestCase):
             print 'RX_DIG 2.14b FAILURE'
             pp(tuner)
             pp(tAlloc)
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_15(self):
         ''' RX_DIG 2.15 allocate with bandwidth = 0 (succeed)
         '''
         ttype='RX_DIGITIZER'
         tuner = self._generateRD()
-         
+        
         tuner['BW'] = float(0.0)
         tAlloc = self._generateAlloc(tuner)
         self.check(self.dut_ref.allocateCapacity(tAlloc), True, 'Allocate %s without specifying bandwidth (BW=0)'%(ttype))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_16(self):
         ''' RX_DIG 2.16 allocate with sample rate = 0 (succeed)
         '''
         ttype='RX_DIGITIZER'
         tuner = self._generateRD()
-         
+        
         tuner['SR'] = float(0.0)
         tAlloc = self._generateAlloc(tuner)
         self.check(self.dut_ref.allocateCapacity(tAlloc), True, 'Allocate %s without specifying sample rate (SR=0)'%(ttype))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_17(self):
         ''' RX_DIG 2.17 allocate below minimum bandwidth capable (succeed)
         '''
         ttype='RX_DIGITIZER'
         tuner = self._generateRD()
         low=DEVICE_INFO['RX_DIGITIZER']['BW_MIN']
-         
+        
         tuner['BW'] = float(int(low / 1.333333333))
         tuner['SR'] = float(0)
         tAlloc = self._generateAlloc(tuner)
         self.check(self.dut_ref.allocateCapacity(tAlloc), True, 'Allocate %s below lowest bandwidth in range(%s < %s)'%(ttype,tuner['BW'],low))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_18(self):
         ''' RX_DIG 2.18 allocate above maximum bandwidth capable (fail)
         '''
         ttype='RX_DIGITIZER'
         tuner = self._generateRD()
         high=DEVICE_INFO['RX_DIGITIZER']['BW_MAX']
-         
+        
         if self.check(high, 0, 'Upper bandwidth range set to 0, cannot test above highest bandwidth', silentFailure=True, successMsg='info'):
             return
-         
+        
         tuner['BW'] = float(high * 2.0)
         tuner['SR'] = float(0)
         tAlloc = self._generateAlloc(tuner)
@@ -813,18 +842,17 @@ class FrontendTunerTests(unittest.TestCase):
             pp(self._getTunerStatusProp(tuner['ALLOC_ID']))
             print 'END DEBUG - failed max bw alloc test'
         '''
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_19(self):
         ''' RX_DIG 2.19 allocate outside of bandwidth tolerance (fail)
         '''
         ttype='RX_DIGITIZER'
         tuner = self._generateRD()
         low=DEVICE_INFO['RX_DIGITIZER']['BW_MIN']
-         
+        
         if self.check(low, 0, 'Lower bandwidth range set to 0, cannot test tolerance below lowest bandwidth', silentFailure=True, successMsg='info'):
             return
-         
+        
         tuner['BW'] = float(int(low / 2.0))
         tuner['BW_TOLERANCE'] = float(10.0)
         tuner['SR'] = float(0)
@@ -840,41 +868,38 @@ class FrontendTunerTests(unittest.TestCase):
             pp(self._getTunerStatusProp(tuner['ALLOC_ID']))
             print 'END DEBUG - failed outside bw tolerance test'
         '''
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_20(self):
         ''' RX_DIG 2.20 allocate below minimum sample rate capable (succeed)
         '''
         ttype='RX_DIGITIZER'
         tuner = self._generateRD()
         low=DEVICE_INFO['RX_DIGITIZER']['SR_MIN']
-         
+        
         tuner['SR'] = float(int(low / 1.333333333))
         tuner['BW'] = float(0)
         tAlloc = self._generateAlloc(tuner)
         self.check(self.dut_ref.allocateCapacity(tAlloc), True, 'Allocate %s below lowest sample rate in range(%s < %s)'%(ttype,tuner['SR'],low))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_21(self):
         ''' RX_DIG 2.21 allocate above maximum sample rate capable (fail)
         '''
         ttype='RX_DIGITIZER'
         tuner = self._generateRD()
         high=DEVICE_INFO['RX_DIGITIZER']['SR_MAX']
-         
+        
         tuner['SR'] = float(high * 2.0)
         tuner['BW'] = float(0)
         tAlloc = self._generateAlloc(tuner)
         self.check(self.dut_ref.allocateCapacity(tAlloc), False, 'Allocate %s above highest sample rate in range(%s > %s)'%(ttype,tuner['SR'],high))
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_2_22(self):
         ''' RX_DIG 2.22 allocate outside of sample rate tolerance (fail)
         '''
         ttype='RX_DIGITIZER'
         tuner = self._generateRD()
         low=DEVICE_INFO['RX_DIGITIZER']['SR_MIN']
-         
+        
         tuner['SR'] = float(int(low / 2.0))
         tuner['SR_TOLERANCE'] = float(10.0)
         tuner['BW'] = float(0)
@@ -890,19 +915,18 @@ class FrontendTunerTests(unittest.TestCase):
             pp(self._getTunerStatusProp(tuner['ALLOC_ID']))
             print 'END DEBUG - failed outside sr tolerance test'
         '''
-        self.dut_ref.deallocateCapacity(tAlloc)
-         
+        
     def testFRONTEND_3_3_01(self):
         ''' RX_DIG 3.1 Verify connection to Tuner port
         '''
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
-         
+        
         # Verify connection to Tuner port
         self.check(tuner_control != None, True, 'Can get %s port'%(port_name))
         self.check(CORBA.is_nil(tuner_control), False, 'Port reference is not nil')
-         
+        
     def testFRONTEND_3_3_02(self):
         ''' RX_DIG 3.2 Verify digital tuner port functions exist
         '''
@@ -910,13 +934,13 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         function_list = self.digital_tuner_idl
-         
+        
         for attr in function_list:
             try:
                 self.check(callable(getattr(tuner_control,attr)), True, '%s port has function %s'%(port_name,attr))
             except AttributeError, e:
                 self.check(False, True, '%s port has function %s'%(port_name,attr))
-                 
+                
     def testFRONTEND_3_3_03(self):
         ''' RX_DIG 3.3 Verify digital tuner port getTunerType function
         '''
@@ -924,17 +948,17 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-         
+        
         try:
             status_val = self._getTunerStatusProp(controller_id, 'FRONTEND::tuner_status::tuner_type')
         except KeyError:
             status_val = None
-         
+        
         try:
             resp = tuner_control.getTunerType(controller_id)
         except FRONTEND.NotSupportedException:
@@ -947,9 +971,8 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(resp, 'RX_DIGITIZER', '%s.getTunerType return value is correct for RX_DIGITIZER'%(port_name))
             if status_val!=None:
                 self.check(resp, status_val, '%s.getTunerType matches frontend tuner status prop'%(port_name))
-                 
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+                
+            
     def testFRONTEND_3_3_04(self):
         ''' RX_DIG 3.4 Verify digital tuner port getTunerDeviceControl function w/ controller
         '''
@@ -957,12 +980,12 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'%s.getTunerDeviceControl(controller_id) ERROR -- could not allocate controller'%(port_name),throwOnFailure=True,silentSuccess=True)
-             
+            
         try:
             resp = tuner_control.getTunerDeviceControl(controller_id)
         except FRONTEND.NotSupportedException:
@@ -973,20 +996,19 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(type(resp), bool, '%s.getTunerDeviceControl(controller_id) has correct return type'%(port_name))
             self.check(resp in [True,False], True, '%s.getTunerDeviceControl(controller_id) return value is within expected results'%(port_name))
             self.check(resp, True, '%s.getTunerDeviceControl(controller_id) return True for controller alloc_id'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_05(self):
         ''' RX_DIG 3.5 Verify digital tuner port getTunerDeviceControl function w/ listener
         '''
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
-         
+        
         controller = self._generateRD()
         pp(controller)
         listener = self._generateListener(controller)
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
@@ -994,7 +1016,7 @@ class FrontendTunerTests(unittest.TestCase):
         listener_id = listener['LISTENER_ID']
         listener_alloc = self._generateListenerAlloc(listener)
         self.check(self.dut_ref.allocateCapacity(listener_alloc),True,'%s.getTunerDeviceControl(listener_id) ERROR -- could not allocate listener'%(port_name),throwOnFailure=True,silentSuccess=True)
-         
+        
         try:
             resp = tuner_control.getTunerDeviceControl(listener_id)
         except FRONTEND.NotSupportedException:
@@ -1005,10 +1027,8 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(type(resp), bool, '%s.getTunerDeviceControl(listener_id) has correct return type'%(port_name))
             self.check(resp in [True,False], True, '%s.getTunerDeviceControl(listener_id) return value is within expected results'%(port_name))
             self.check(resp, False, '%s.getTunerDeviceControl(listener_id) returns False for listener alloc_id'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(listener_alloc)
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_06(self):
         ''' RX_DIG 3.6 Verify digital tuner port getTunerGroupId function
         '''
@@ -1016,17 +1036,17 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-         
+        
         try:
             status_val = self._getTunerStatusProp(controller_id, 'FRONTEND::tuner_status::group_id')
         except KeyError:
             status_val = None
-         
+        
         try:
             resp = tuner_control.getTunerGroupId(controller_id)
         except FRONTEND.NotSupportedException:
@@ -1038,9 +1058,8 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(type(resp), str, '%s.getTunerGroupId return value is within expected results'%(port_name))
             if status_val!=None:
                 self.check(resp, status_val, '%s.getTunerGroupId matches frontend tuner status prop'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_07(self):
         ''' RX_DIG 3.7 Verify digital tuner port getTunerRfFlowId function
         '''
@@ -1048,17 +1067,17 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-         
+        
         try:
             status_val = self._getTunerStatusProp(controller_id, 'FRONTEND::tuner_status::rf_flow_id')
         except KeyError:
             status_val = None
-             
+            
         try:
             resp = tuner_control.getTunerRfFlowId(controller_id)
         except FRONTEND.NotSupportedException:
@@ -1070,9 +1089,8 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(type(resp), str, '%s.getTunerRfFlowId return value is within expected results'%(port_name))
             if status_val!=None:
                 self.check(resp, status_val, '%s.getTunerRfFlowId matches frontend tuner status prop'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_08(self):
         ''' RX_DIG 3.8 Verify digital tuner port getTunerCenterFrequency function
         '''
@@ -1080,17 +1098,17 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         try:
             status_val = self._getTunerStatusProp(controller_id, 'FRONTEND::tuner_status::center_frequency')
         except KeyError:
             status_val = None
-             
+            
         try:
             resp = tuner_control.getTunerCenterFrequency(controller_id)
         except FRONTEND.NotSupportedException:
@@ -1102,9 +1120,8 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(resp >= 0.0, True, '%s.getTunerCenterFrequency return value is within expected results'%(port_name))
             if status_val!=None:
                 self.checkAlmostEqual(resp, status_val, '%s.getTunerCenterFrequency matches frontend tuner status prop'%(port_name),places=0)
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_09(self):
         ''' RX_DIG 3.9 Verify digital tuner port getTunerBandwidth function
         '''
@@ -1112,17 +1129,17 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         try:
             status_val = self._getTunerStatusProp(controller_id, 'FRONTEND::tuner_status::bandwidth')
         except KeyError:
             status_val = None
-             
+            
         # getTunerBandwidth
         # double: >= 0?
         try:
@@ -1136,9 +1153,8 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(resp >= 0.0, True, '%s.getTunerBandwidth return value is within expected results'%(port_name))
             if status_val!=None:
                 self.checkAlmostEqual(resp, status_val, '%s.getTunerBandwidth matches frontend tuner status prop'%(port_name),places=0)
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_10(self):
         ''' RX_DIG 3.10 Verify digital tuner port getTunerOutputSampleRate function
         '''
@@ -1146,17 +1162,17 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         try:
             status_val = self._getTunerStatusProp(controller_id, 'FRONTEND::tuner_status::sample_rate')
         except KeyError:
             status_val = None
-         
+        
         try:
             resp = tuner_control.getTunerOutputSampleRate(controller_id)
         except FRONTEND.NotSupportedException:
@@ -1168,9 +1184,8 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(resp >= 0.0, True, '%s.getTunerOutputSampleRate return value is within expected results'%(port_name))
             if status_val!=None:
                 self.checkAlmostEqual(resp, status_val, '%s.getTunerOutputSampleRate matches frontend tuner status prop'%(port_name),places=0)
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_11(self):
         ''' RX_DIG 3.11 Verify digital tuner port getTunerAgcEnable function
         '''
@@ -1178,17 +1193,17 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         try:
             status_val = self._getTunerStatusProp(controller_id, 'FRONTEND::tuner_status::agc')
         except KeyError:
             status_val = None
-             
+            
         try:
             resp = tuner_control.getTunerAgcEnable(controller_id)
         except FRONTEND.NotSupportedException:
@@ -1200,9 +1215,8 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(resp in [True,False], True, '%s.getTunerAgcEnable return value is within expected results'%(port_name))
             if status_val!=None:
                 self.check(resp, status_val, '%s.getTunerAgcEnable matches frontend tuner status prop'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_12(self):
         ''' RX_DIG 3.12 Verify digital tuner port getTunerGain function
         '''
@@ -1210,17 +1224,17 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         try:
             status_val = self._getTunerStatusProp(controller_id, 'FRONTEND::tuner_status::gain')
         except KeyError:
             status_val = None
-             
+            
         try:
             resp = tuner_control.getTunerGain(controller_id)
         except FRONTEND.NotSupportedException:
@@ -1232,9 +1246,8 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(type(resp), float, '%s.getTunerGain return value is within expected results'%(port_name))
             if status_val!=None:
                 self.checkAlmostEqual(resp, status_val, '%s.getTunerGain matches frontend tuner status prop'%(port_name),places=2)
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_13(self):
         ''' RX_DIG 3.13 Verify digital tuner port getTunerReferenceSource function
         '''
@@ -1242,17 +1255,17 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         try:
             status_val = self._getTunerStatusProp(controller_id, 'FRONTEND::tuner_status::reference_source')
         except KeyError:
             status_val = None
-             
+            
         try:
             resp = tuner_control.getTunerReferenceSource(controller_id)
         except FRONTEND.NotSupportedException:
@@ -1264,9 +1277,8 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(resp in [0,1], True, '%s.getTunerReferenceSource return value within expected results'%(port_name))
             if status_val!=None:
                 self.check(resp, status_val, '%s.getTunerReferenceSource matches frontend tuner status prop'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_14(self):
         ''' RX_DIG 3.14 Verify digital tuner port getTunerEnable function
         '''
@@ -1274,17 +1286,17 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         try:
             status_val = self._getTunerStatusProp(controller_id, 'FRONTEND::tuner_status::enabled')
         except KeyError:
             status_val = None
- 
+
         try:
             resp = tuner_control.getTunerEnable(controller_id)
         except FRONTEND.NotSupportedException:
@@ -1296,9 +1308,8 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(resp in [True,False], True, '%s.getTunerEnable return value is within expected results'%(port_name))
             if status_val!=None:
                 self.check(resp, status_val, '%s.getTunerEnable matches frontend tuner status prop'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_15(self):
         ''' RX_DIG 3.15 Verify digital tuner port getTunerStatus function
         '''
@@ -1306,18 +1317,18 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         try:
             status_val = self._getTunerStatusProp(controller_id)
         except KeyError:
             status_val = None
         props_type = type(properties.props_from_dict({}))
-             
+            
         try:
             resp = tuner_control.getTunerStatus(controller_id)
         except FRONTEND.NotSupportedException:
@@ -1332,18 +1343,17 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(controller_id in resp['FRONTEND::tuner_status::allocation_id_csv'].split(','), True, '%s.getTunerStatus return value has correct tuner status for allocation ID requested'%(port_name))
             if status_val!=None:
                 self.check(resp, status_val, '%s.getTunerStatus matches frontend tuner status prop'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+            
+        
         # Verify setter functions
         # for each of the following, do bounds checking in addition to simple setter checking
         # setTunerCenterFrequency
         # setTunerBandwidth
         # setTunerOutputSampleRate
         # setTunerGain
-           
+          
         # Verify in-bounds retune
-             
+            
     def testFRONTEND_3_3_16(self):
         ''' RX_DIG 3.16 Verify digital tuner port setTunerCenterFrequency function in-bounds retune
         '''
@@ -1352,12 +1362,12 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-         
+        
         #check Center Freq: tune to min, max, then orig
         try:
             cf = tuner_control.getTunerCenterFrequency(controller_id)
@@ -1397,9 +1407,8 @@ class FrontendTunerTests(unittest.TestCase):
                 self.checkAlmostEqual(tuner_info['CF_MAX'],tuner_control.getTunerCenterFrequency(controller_id),'In-bounds re-tune of frequency - tuned to maximum CF (%s)'%(tuner_info['CF_MAX']),places=0)
                 tuner_control.setTunerCenterFrequency(controller_id, cf)
                 self.checkAlmostEqual(cf,tuner_control.getTunerCenterFrequency(controller_id),'In-bounds re-tune of frequency - tuned back to original CF (%s)'%(cf),places=0)
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-             
+            
+            
     def testFRONTEND_3_3_17(self):
         ''' RX_DIG 3.17 Verify digital tuner port setTunerBandwidth function in-bounds retune
         '''
@@ -1408,12 +1417,12 @@ class FrontendTunerTests(unittest.TestCase):
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-                 
+                
         #Check Bandwidth: tune to min, max, then orig
         try:
             bw = tuner_control.getTunerBandwidth(controller_id)
@@ -1453,24 +1462,23 @@ class FrontendTunerTests(unittest.TestCase):
                 self.checkAlmostEqual(tuner_info['BW_MAX'],tuner_control.getTunerBandwidth(controller_id),'In-bounds re-tune of bandwidth - set to maximum BW (%s)'%tuner_info['BW_MAX'],places=0)
                 tuner_control.setTunerBandwidth(controller_id, bw)
                 self.checkAlmostEqual(bw,tuner_control.getTunerBandwidth(controller_id),'In-bounds re-tune of bandwidth - set to original BW (%s)'%bw,places=0)
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-                 
+
+                
     def testFRONTEND_3_3_18(self):
         ''' RX_DIG 3.18 Verify digital tuner port setTunerOutputSampleRate function in-bounds retune
         '''
-             
+            
         tuner_info=DEVICE_INFO['RX_DIGITIZER']
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         #Check SR: tune to min, max, then orig
         try:
             sr = tuner_control.getTunerOutputSampleRate(controller_id)
@@ -1510,24 +1518,23 @@ class FrontendTunerTests(unittest.TestCase):
                 self.checkAlmostEqual(tuner_info['SR_MAX'],tuner_control.getTunerOutputSampleRate(controller_id),'In-bounds re-tune of sample rate - set to maximum SR (%s)'%tuner_info['SR_MAX'],places=0)
                 tuner_control.setTunerOutputSampleRate(controller_id, sr)   
                 self.checkAlmostEqual(sr,tuner_control.getTunerOutputSampleRate(controller_id),'In-bounds re-tune of sample rate - set to original SR (%s)'%sr,places=0)
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_19(self):
         ''' RX_DIG 3.19 Verify digital tuner port setTunerGain function in-bounds retune
         '''
-             
+            
         tuner_info=DEVICE_INFO['RX_DIGITIZER']
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-         
+        
         # check gain: set to min, max, then orig
         try:
             gain = tuner_control.getTunerGain(controller_id)
@@ -1567,24 +1574,23 @@ class FrontendTunerTests(unittest.TestCase):
                 self.checkAlmostEqual(tuner_info['GAIN_MAX'],tuner_control.getTunerGain(controller_id),'In-bounds setting of gain - set to maximum gain (%s)'%tuner_info['GAIN_MAX'],places=2)
                 tuner_control.setTunerGain(controller_id, gain)
                 self.checkAlmostEqual(gain,tuner_control.getTunerGain(controller_id),'In-bounds setting of gain - set to original gain (%s)'%gain,places=2)
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_20(self):
         ''' RX_DIG 3.20 Verify digital tuner port setTunerCenterFrequency function out of bounds retune
         '''
-             
+            
         tuner_info=DEVICE_INFO['RX_DIGITIZER']
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-                     
+                    
         #Verify outside-bounds retune
         #check Center Freq:
         try:
@@ -1613,24 +1619,23 @@ class FrontendTunerTests(unittest.TestCase):
                     tuner_control.setTunerCenterFrequency(controller_id, cf)
                 except:
                     pass
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_21(self):
         ''' RX_DIG 3.21 Verify digital tuner port setTunerBandwidth function out of bounds retune
         '''
-             
+            
         tuner_info=DEVICE_INFO['RX_DIGITIZER']
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-         
+        
         #Check Bandwidth      
         try:
             bw = tuner_control.getTunerBandwidth(controller_id)
@@ -1672,24 +1677,23 @@ class FrontendTunerTests(unittest.TestCase):
                     tuner_control.setTunerBandwidth(controller_id, bw)
                 except:
                     pass
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_22(self):
         ''' RX_DIG 3.22 Verify digital tuner port setTunerOutputSampleRate function out of bounds retune
         '''
-             
+            
         tuner_info=DEVICE_INFO['RX_DIGITIZER']
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         #Check SR
         try:
             sr = tuner_control.getTunerOutputSampleRate(controller_id)
@@ -1724,24 +1728,23 @@ class FrontendTunerTests(unittest.TestCase):
                     tuner_control.setTunerOutputSampleRate(controller_id, sr)
                 except:
                     pass
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_23(self):
         ''' RX_DIG 3.23 Verify digital tuner port setTunerGain function out of bounds retune
         '''
-             
+            
         tuner_info=DEVICE_INFO['RX_DIGITIZER']
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-         
+        
         #Check gain
         try:
             gain = tuner_control.getTunerGain(controller_id)
@@ -1776,23 +1779,22 @@ class FrontendTunerTests(unittest.TestCase):
                     tuner_control.setTunerGain(controller_id, gain)
                 except:
                     pass
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_24(self):
         ''' RX_DIG 3.24 Verify digital tuner port setTunerAgcEnable function
         '''
-             
+            
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-         
+        
         # test changing values for the rest
         # setTunerAgcEnable
         try:
@@ -1814,23 +1816,22 @@ class FrontendTunerTests(unittest.TestCase):
                 self.check(not orig,tuner_control.getTunerAgcEnable(controller_id),'setting agc enable -- set to new value')
                 tuner_control.setTunerAgcEnable(controller_id, orig)
                 self.check(orig,tuner_control.getTunerAgcEnable(controller_id),'setting agc enable -- set back to original value')
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_25(self):
         ''' RX_DIG 3.25 Verify digital tuner port setTunerReferenceSource function
         '''
-             
+            
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         # setTunerReferenceSource
         try:
             orig = tuner_control.getTunerReferenceSource(controller_id)
@@ -1851,23 +1852,22 @@ class FrontendTunerTests(unittest.TestCase):
                 self.check(int(not orig),tuner_control.getTunerReferenceSource(controller_id),'setting tuner reference source -- set to new value')
                 tuner_control.setTunerReferenceSource(controller_id, orig)
                 self.check(orig,tuner_control.getTunerReferenceSource(controller_id),'setting tuner reference source -- set back to original value')
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_26(self):
         ''' RX_DIG 3.26 Verify digital tuner port setTunerEnable function
         '''
-             
+            
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         # setTunerEnable
         try:
             orig = tuner_control.getTunerEnable(controller_id)
@@ -1888,24 +1888,23 @@ class FrontendTunerTests(unittest.TestCase):
                 self.check(not orig,tuner_control.getTunerEnable(controller_id),'setting tuner enable -- set to new value')
                 tuner_control.setTunerEnable(controller_id, orig)
                 self.check(orig,tuner_control.getTunerEnable(controller_id),'setting tuner enable -- set back to original value')
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_27(self):
         ''' RX_DIG 3.27 Verify digital tuner port getter functions w/ bad alloc id
         '''
-             
+            
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
         function_list = self.digital_tuner_idl
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         # verify invalid alloc_id -> FrontendException
         bad_id = str(uuid.uuid4())
         for attr in filter(lambda x: x.startswith('get'),function_list):
@@ -1920,24 +1919,23 @@ class FrontendTunerTests(unittest.TestCase):
                 self.check(False,True,'%s.%s called with bad alloc_id (produces %s exception, should produce FrontendException)'%(port_name,attr,e.__class__.__name__))
             else:
                 self.check(False,True,'%s.%s called with bad alloc_id (does not produce exception, should produce FrontendException)'%(port_name,attr))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_28(self):
         ''' RX_DIG 3.28 Verify digital tuner port setTunerCenterFrequency function w/ bad alloc id
         '''
-         
+        
         tuner_info=DEVICE_INFO['RX_DIGITIZER']
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-                 
+                
         # setTunerCenterFrequency
         bad_id = str(uuid.uuid4())
         try:
@@ -1950,24 +1948,23 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False,True,'%s.setTunerCenterFrequency called with bad alloc_id (produces %s exception, should produce FrontendException)'%(port_name,e.__class__.__name__))
         else:
             self.check(False,True,'%s.setTunerCenterFrequency called with bad alloc_id produces FrontendException (no exception)'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_29(self):
         ''' RX_DIG 3.29 Verify digital tuner port setTunerBandwidth function w/ bad alloc id
         '''
-         
+        
         tuner_info=DEVICE_INFO['RX_DIGITIZER']
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         # setTunerBandwidth
         bad_id = str(uuid.uuid4())
         try:
@@ -1980,24 +1977,23 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False,True,'%s.setTunerBandwidth called with bad alloc_id (produces %s exception, should produce FrontendException)'%(port_name,e.__class__.__name__))
         else:
             self.check(False,True,'%s.setTunerBandwidth called with bad alloc_id produces FrontendException (no exception)'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_30(self):
         ''' RX_DIG 3.30 Verify digital tuner port setTunerOutputSampleRate function w/ bad alloc id
         '''
-         
+        
         tuner_info=DEVICE_INFO['RX_DIGITIZER']
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
- 
+
         # setTunerOutputSampleRate
         bad_id = str(uuid.uuid4())
         try:
@@ -2010,24 +2006,23 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False,True,'%s.setTunerOutputSampleRate called with bad alloc_id (produces %s exception, should produce FrontendException)'%(port_name,e.__class__.__name__))
         else:
             self.check(False,True,'%s.setTunerOutputSampleRate called with bad alloc_id produces FrontendException (no exception)'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_31(self):
         ''' RX_DIG 3.31 Verify digital tuner port setTunerGain function w/ bad alloc id
         '''
-         
+        
         tuner_info=DEVICE_INFO['RX_DIGITIZER']
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         # setTunerGain
         bad_id = str(uuid.uuid4())
         try:
@@ -2040,23 +2035,22 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False,True,'%s.setTunerGain called with bad alloc_id (produces %s exception, should produce FrontendException)'%(port_name,e.__class__.__name__))
         else:
             self.check(False,True,'%s.setTunerGain called with bad alloc_id produces FrontendException (no exception)'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_32(self):
         ''' RX_DIG 3.32 Verify digital tuner port setTunerAgcEnable function w/ bad alloc id
         '''
-         
+        
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         # setTunerAgcEnable
         bad_id = str(uuid.uuid4())
         try:
@@ -2069,23 +2063,22 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False,True,'%s.setTunerAgcEnable called with bad alloc_id (produces %s exception, should produce FrontendException)'%(port_name,e.__class__.__name__))
         else:
             self.check(False,True,'%s.setTunerAgcEnable called with bad alloc_id produces FrontendException (no exception)'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_33(self):
         ''' RX_DIG 3.33 Verify digital tuner port setTunerReferenceSource function w/ bad alloc id
         '''
-         
+        
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         # setTunerReferenceSource
         bad_id = str(uuid.uuid4())
         try:
@@ -2098,23 +2091,22 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False,True,'%s.setTunerReferenceSource called with bad alloc_id (produces %s exception, should produce FrontendException)'%(port_name,e.__class__.__name__))
         else:
             self.check(False,True,'%s.setTunerReferenceSource called with bad alloc_id produces FrontendException (no exception)'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
     def testFRONTEND_3_3_34(self):
         ''' RX_DIG 3.34 Verify digital tuner port setTunerEnable function w/ bad alloc id
         '''
-         
+        
         port_name = 'DigitalTuner_in'
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
         controller = self._generateRD()
- 
+
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
-             
+            
         # setTunerEnable
         bad_id = str(uuid.uuid4())
         try:
@@ -2127,14 +2119,33 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(False,True,'%s.setTunerEnable called with bad alloc_id (produces %s exception, should produce FrontendException)'%(port_name,e.__class__.__name__))
         else:
             self.check(False,True,'%s.setTunerEnable called with bad alloc_id produces FrontendException (no exception)'%(port_name))
-             
-        self.dut_ref.deallocateCapacity(controller_alloc)
-         
+
+        
+    def testFRONTEND_3_4_DataFlow1(self):
+        ''' RX_DIG 4 DataFlow - First Port
+        '''
+        self._testFRONTEND_3_4_DataFlow(1)
+
+    def testFRONTEND_3_4_DataFlow2(self):
+        ''' RX_DIG 4 DataFlow - Second Port
+        '''
+        self._testFRONTEND_3_4_DataFlow(2)
+
+    def testFRONTEND_3_4_DataFlow3(self):
+        ''' RX_DIG 4 DataFlow - Third Port
+        '''
+        self._testFRONTEND_3_4_DataFlow(3)
+
+    def testFRONTEND_3_4_DataFlow4(self):
+        ''' RX_DIG 4 DataFlow - Fourth Port
+        '''
+        self._testFRONTEND_3_4_DataFlow(4)
+
     # TODO - noseify
-    def testFRONTEND_3_4_DataFlow(self):
+    def _testFRONTEND_3_4_DataFlow(self, port_num):
         ''' RX_DIG 4 DataFlow
         '''
- 
+
         ttype='RX_DIGITIZER'
         controller = self._generateRD()
         #controller['CF'] = float(DEVICE_INFO[ttype]['CF_MIN'] + max(DEVICE_INFO[ttype]['BW_MIN'],DEVICE_INFO[ttype]['SR_MIN']))
@@ -2142,21 +2153,28 @@ class FrontendTunerTests(unittest.TestCase):
         controller['SR'] = float(DEVICE_INFO[ttype]['SR_MIN'])
         listener1 = self._generateListener(controller)
         listener2 = self._generateListener(controller)
- 
+
         tuner_control = self.dut.getPort('DigitalTuner_in')
         scd = SCDParser.parse(self.scd_file)
+        count = 0
         for port in sorted(self.scd.get_componentfeatures().get_ports().get_uses(),reverse=True):
             comp_port_type = port.get_repid().split(':')[1].split('/')[-1]
             comp_port_name = port.get_usesname()
-            if comp_port_type not in self.port_map:
+            if comp_port_type in self.port_map:
+                count += 1
+                if count == port_num:
+                    self._testBULKIO(tuner_control,comp_port_name,comp_port_type,ttype,controller,listener1,listener2)
+            elif comp_port_type == "dataSDDS":
+                count += 1
+                if count == port_num:
+                    self._testSDDS(tuner_control,comp_port_name,comp_port_type,ttype,controller,listener1,listener2)
+            else:
                 print 'WARNING - skipping %s port named %s, not supported BULKIO port type'%(comp_port_type,comp_port_name)
                 continue
-            self._testBULKIO(tuner_control,comp_port_name,comp_port_type,ttype,controller,listener1,listener2)
-             
+
     def _testBULKIO(self,tuner_control,comp_port_name,comp_port_type,ttype,controller,listener1=None,listener2=None):
         if comp_port_type == 'dataSDDS':
-            print 'WARNING - dataSDDS output port testing not supported'
-            return
+            return self._testSDDS(tuner_control,comp_port_name,comp_port_type,ttype,controller,listener1,listener2)
         print 'Testing data flow on port:',comp_port_type,comp_port_name
         pp(controller)
         comp_port_obj = self.dut.getPort(str(comp_port_name))
@@ -2168,9 +2186,9 @@ class FrontendTunerTests(unittest.TestCase):
         dataSink2_port_obj = dataSink2.getPort(self.port_map[comp_port_type])
         dataSink3_port_obj = dataSink3.getPort(self.port_map[comp_port_type])
         dataSink4_port_obj = dataSink4.getPort(self.port_map[comp_port_type])
-         
+        
         #sb.start()
-         
+        
         # alloc a tuner
         controller['ALLOC_ID'] = "control:"+str(uuid.uuid4()) # unique for each loop
         tAlloc = self._generateAlloc(controller)
@@ -2178,7 +2196,7 @@ class FrontendTunerTests(unittest.TestCase):
         pp(tAlloc)
         comp_port_obj.connectPort(dataSink1_port_obj, controller['ALLOC_ID'])
         self.dut_ref.allocateCapacity(tAlloc)
-         
+        
         # verify basic data flow
         print >> sys.stderr,'attempting to get data from tuner'
         for attempt in xrange(10):
@@ -2188,48 +2206,217 @@ class FrontendTunerTests(unittest.TestCase):
             if len(data1)>0:
                 break
         self.check(len(data1)>0,True,'%s: Received data from tuner allocation'%(comp_port_name))
-         
+        
         # verify SRI
         try:
             status = properties.props_to_dict(tuner_control.getTunerStatus(controller['ALLOC_ID']))
         except FRONTEND.NotSupportedException, e:
             status = self._getTunerStatusProp(controller['ALLOC_ID'])
         pp(status)
-        if ttype=='DDC':
-            # get tuner status of parent CHAN/RDC... may be ambiguous
-            chan_props = {'FRONTEND::tuner_status::group_id':status['FRONTEND::tuner_status::group_id'],
-                          'FRONTEND::tuner_status::rf_flow_id':status['FRONTEND::tuner_status::rf_flow_id']}
-            ddc_props = {'FRONTEND::tuner_status::tuner_type':'DDC'}
-            try:
-                chan_status = self._findTunerStatusProps(match=chan_props,notmatch=ddc_props)
-            except KeyError:
-                chan_status = None
-            else:
-                if len(chan_status) != 1:
-                    # ambiguous or no match found, can't be sure we're checking correct COL_RF
-                    chan_status = None
-                else:
-                    chan_status = chan_status[0]
-         
+        
+        #verify SRI
         sri1 = dataSink1.sri()
-        print 'sri1',sri1
-        self.checkAlmostEqual(status['FRONTEND::tuner_status::sample_rate'], 1.0/sri1.xdelta, '%s: SRI xdelta has correct value'%(comp_port_name),places=0)
+        self._verifySRI (sri1,status,comp_port_name)  
+     
+        # verify multi-out port
+        bad_conn_id = "bad:"+str(uuid.uuid4())
+        comp_port_obj.connectPort(dataSink2_port_obj, bad_conn_id)
+        for attempt in xrange(5):
+            time.sleep(1.0)
+            data2 = dataSink2.getData()
+            #print >> sys.stderr,'attempt',attempt,'len(data2)=',len(data2)
+            if len(data2)>0:
+                break
+        #print 'data2',len(data2)
+        self.check(len(data2)>0,False,'%s: Did not receive data from tuner allocation with wrong alloc_id (multiport test)'%(comp_port_name))
+        sri1 = dataSink1.sri()
+        sri2 = dataSink2.sri()
+        print 'sri2',sri2
+        self.check(sri1.streamID==sri2.streamID,False,'%s: Did not receive correct SRI from tuner allocation with wrong alloc_id (multiport test)'%(comp_port_name))
+        
+        if self.device_discovery[ttype] < 2:
+            self.check(True,True,'%s: Cannot fully test multiport because only single %s tuner capability'%(comp_port_name,ttype),successMsg='info')
+        else:
+            pass # TODO - additional multiport tests here
+    
+        if listener1:
+            # verify listener
+            listener1 = self._generateListener(controller) # unique for each loop
+            listener1['LISTENER_ID'] = "listener1:"+listener1['LISTENER_ID']
+            listenerAlloc1 = self._generateListenerAlloc(listener1)
+            comp_port_obj.connectPort(dataSink3_port_obj, listener1['LISTENER_ID'])
+            self.dut_ref.allocateCapacity(listenerAlloc1)
+            
+            for attempt in xrange(5):
+                time.sleep(1.0)
+                data3 = dataSink3.getData()
+                #print >> sys.stderr,'attempt',attempt,'len(data3)=',len(data3)
+                if len(data3)>0:
+                    break
+            #print 'data3',len(data3)
+            self.check(len(data3)>0,True,'%s: Received data from listener allocation'%(comp_port_name))
+            sri1 = dataSink1.sri()
+            sri3 = dataSink3.sri()
+            print 'sri3',sri3
+            self.check(sri1.streamID==sri3.streamID,True,'%s: Received correct SRI from listener allocation'%(comp_port_name))
+            
+            # verify EOS
+            if listener2:
+                listener2 = self._generateListener(controller) # unique for each loop
+                listener2['LISTENER_ID'] = "listener2:"+listener2['LISTENER_ID']
+                listenerAlloc2 = self._generateListenerAlloc(listener2)
+                comp_port_obj.connectPort(dataSink4_port_obj, listener2['LISTENER_ID'])
+                self.dut_ref.allocateCapacity(listenerAlloc2)               
+                time.sleep(1.0)
+                #for port_dict in port_list:       
+                    #data4 = dataSink4.getData()
+            self.dut_ref.deallocateCapacity(listenerAlloc1)
+            self.check(dataSink3.eos(),True,'%s: Listener received EOS after deallocation of listener'%(comp_port_name))
+            self.check(dataSink1.eos(),False,'%s: Controller did not receive EOS after deallocation of listener'%(comp_port_name))
+            self.dut_ref.deallocateCapacity(tAlloc)
+            self.check(dataSink1.eos(),True,'%s: Controller did receive EOS after deallocation of tuner'%(comp_port_name))
+            if listener2:
+                self.check(dataSink4.eos(),True,'%s: Listener received EOS after deallocation of tuner'%(comp_port_name))
+                # cleanup listener2
+                comp_port_obj.disconnectPort(listener2['LISTENER_ID'])
+                try:
+                    self.dut_ref.deallocateCapacity(listenerAlloc2)
+                except:
+                    pass
+            # cleanup listener1
+            comp_port_obj.disconnectPort(listener1['LISTENER_ID'])
+        # cleanup controller
+        comp_port_obj.disconnectPort(controller['ALLOC_ID'])
+        comp_port_obj.disconnectPort(bad_conn_id)
+    
+    def _testSDDS(self,tuner_control,comp_port_name,comp_port_type,ttype,controller,listener1=None,listener2=None):
+        print 'Testing SDDS port Behavior'
+        comp_port_obj = self.dut.getPort(str(comp_port_name))
+        dataSink1 = sb.DataSinkSDDS()
+        dataSink2 = sb.DataSinkSDDS()
+        dataSink1_port_obj = dataSink1.getPort("dataSDDSIn")
+        dataSink2_port_obj = dataSink2.getPort("dataSDDSIn")
+        
+        # alloc a tuner
+        controller['ALLOC_ID'] = "control:"+str(uuid.uuid4()) # unique for each loop
+        tAlloc = self._generateAlloc(controller)
+        comp_port_obj.connectPort(dataSink1_port_obj, controller['ALLOC_ID'])
+        self.dut_ref.allocateCapacity(tAlloc)
+
+        time.sleep(4)
+        
+        sri1 = dataSink1._sink.sri
+        if not sri1:
+            self.check(False, True, "%s: No SRI pushed after connection and Allocation. Cannot continue Test"%(comp_port_name))
+            return
+        
+        attachments1 = dataSink1._sink.attachments
+        if not attachments1:
+            self.check(False, True, "%s: No Attach Sent after connection and Allocation. Cannot continue Test"%(comp_port_name))
+            return
+        try:
+            status = properties.props_to_dict(tuner_control.getTunerStatus(controller['ALLOC_ID']))
+        except FRONTEND.NotSupportedException, e:
+            status = self._getTunerStatusProp(controller['ALLOC_ID'])
+        
+        #verify SRI
+        self._verifySRI (sri1,status,comp_port_name)       
+
+        #verify Attachment
+        self._verifyAttach(attachments1,status,comp_port_name)
+
+        # verify multi-out port
+        bad_conn_id = "bad:"+str(uuid.uuid4())
+        comp_port_obj.connectPort(dataSink2_port_obj, bad_conn_id)
+        for attempt in xrange(5):
+            time.sleep(1.0)
+            attachments2 = dataSink2._sink.attachments
+            sri2 = dataSink2._sink.sri
+            if sri2 or attachments2:
+                break
+        self.check(not(sri2),True,'%s: Did not receive sri from tuner allocation with wrong alloc_id (multiport test)'%(comp_port_name))
+        self.check(not(attachments2),True,'%s: Did not receive attach from tuner allocation with wrong alloc_id (multiport test)'%(comp_port_name))
+        
+        comp_port_obj.disconnectPort(bad_conn_id)
+        
+        # verify listener
+        listener1 = self._generateListener(controller) # unique for each loop
+        listener1['LISTENER_ID'] = "listener1:"+listener1['LISTENER_ID']
+        listenerAlloc1 = self._generateListenerAlloc(listener1)
+        comp_port_obj.connectPort(dataSink2_port_obj, listener1['LISTENER_ID'])
+        self.dut_ref.allocateCapacity(listenerAlloc1)
+        
+        time.sleep(0.1)
+        
+        sri2 = dataSink2._sink.sri
+        if not sri2:
+            self.check(False, True, "%s: No SRI pushed after connection and Listener Allocation. Cannot continue Test"%(comp_port_name))
+            return
+        
+        attachments2 = dataSink2._sink.attachments
+        if not attachments2:
+            self.check(False, True, "%s: No Attach Sent after connection and Listener Allocation. Cannot continue Test"%(comp_port_name))
+            return
+
+        self.check(sri1.streamID==sri2.streamID,True,'%s: Received correct SRI from listener allocation'%(comp_port_name))
+        self._compareAttach(attachments1,attachments2,comp_port_name)
+
+        self.dut_ref.deallocateCapacity(listenerAlloc1)
+        time.sleep(1)
+        
+        attachments2 = dataSink2._sink.attachments
+        self.check(not(attachments2), True,'%s: Detach Listener on deallocation of listener'%(comp_port_name))
+
+        self.dut_ref.deallocateCapacity(tAlloc)
+        time.sleep(1)
+        
+        attachments1 = dataSink1._sink.attachments
+        self.check(not(attachments1), True,'%s: Detach Data on deallocation'%(comp_port_name))
+
+    def _compareAttach(self,attachments1,attachments2,comp_port_name=""):
+        attachmentIDs1 = attachments1.keys()
+        self.check(1,len(attachmentIDs1), "%s: Received Correct Number of Attachments on Listener"%(comp_port_name))
+        attachmentID1 = attachmentIDs1[0]
+        sddsStreamDef1 = attachments1[attachmentID1][0]
+              
+        attachmentIDs2 = attachments2.keys()
+        self.check(1,len(attachmentIDs2), "%s: Received Correct Number of Attachments on Listener"%(comp_port_name))
+        attachmentID2 = attachmentIDs2[0]
+        sddsStreamDef2 = attachments2[attachmentID2][0]
+        self.check(sddsStreamDef1.id==sddsStreamDef2.id,True,'%s: Received correct attach from listener allocation'%(comp_port_name))
+
+
+    def _verifyAttach(self,attachments,status,comp_port_name=""):
+        attachmentIDs = attachments.keys()
+        self.check(1,len(attachmentIDs), "%s: Received Correct Number of Attachments"%(comp_port_name))
+        attachmentID = attachmentIDs[0]
+        sddsStreamDef1 = attachments[attachmentID][0]
+        
+        # Sample rate is stored as a double in frontend tuner status, but as an
+        # unsigned long in the SDDS Stream Definition, so we cast to long here.
+        #print 'srate: fts:', status['FRONTEND::tuner_status::sample_rate'], ' fts rounded:', long(status['FRONTEND::tuner_status::sample_rate']+.5), ' sdds:', sddsStreamDef1.sampleRate
+        self.check(long(status['FRONTEND::tuner_status::sample_rate']+.5), sddsStreamDef1.sampleRate, '%s: Attach SampleRate has correct value'%(comp_port_name))
+        self.check(status['FRONTEND::tuner_status::output_multicast'], sddsStreamDef1.multicastAddress, '%s: Attach multicast Address has correct value'%(comp_port_name))
+        self.check(status['FRONTEND::tuner_status::output_vlan'], sddsStreamDef1.vlan, '%s: Attach vlan has correct value'%(comp_port_name))
+        self.check(status['FRONTEND::tuner_status::output_port'], sddsStreamDef1.port, '%s: Attach port has correct value'%(comp_port_name))
+
+
+    def _verifySRI(self,sri,status,comp_port_name=""):
+        
+        # verify SRI
+
+    
+        self.checkAlmostEqual(status['FRONTEND::tuner_status::sample_rate'], 1.0/sri.xdelta, '%s: SRI xdelta has correct value'%(comp_port_name),places=0)
         
         #complex is an optional property but if it is present check that it matches sri.
         if 'FRONTEND::tuner_status::complex' in status:
-            self.check(status['FRONTEND::tuner_status::complex'],sri1.mode,'%s: SRI mode has correct value'%(comp_port_name))
+            self.check(status['FRONTEND::tuner_status::complex'],sri.mode,'%s: SRI mode has correct value'%(comp_port_name))
          
         # verify SRI keywords
-        keywords = properties.props_to_dict(sri1.keywords)
+        keywords = properties.props_to_dict(sri.keywords)
         if 'COL_RF' in keywords:
             self.check(True,True,'%s: SRI has COL_RF keyword'%(comp_port_name))
-            if ttype == 'DDC':
-                if chan_status != None:
-                    self.checkAlmostEqual(chan_status['FRONTEND::tuner_status::center_frequency'],keywords['COL_RF'],'%s: SRI keyword COL_RF has correct value'%(comp_port_name),places=0)
-                else:
-                    print 'WARNING - could not determine center frequency of collector to compare with COL_RF keyword'
-            else:
-                self.checkAlmostEqual(status['FRONTEND::tuner_status::center_frequency'],keywords['COL_RF'],'%s: SRI keyword COL_RF has correct value'%(comp_port_name),places=0)
+            self.checkAlmostEqual(status['FRONTEND::tuner_status::center_frequency'],keywords['COL_RF'],'%s: SRI keyword COL_RF has correct value'%(comp_port_name),places=0)
         else:
             self.check(False,True,'%s: SRI has COL_RF keyword'%(comp_port_name))
              
@@ -2256,75 +2443,7 @@ class FrontendTunerTests(unittest.TestCase):
             self.check(True,True,'%s: SRI has FRONTEND::DEVICE_ID keyword'%(comp_port_name))
             #self.check(1,keywords['FRONTEND::DEVICE_ID'],'SRI keyword FRONTEND::DEVICE_ID has correct value')
         else:
-            self.check(False,True,'%s: SRI has FRONTEND::DEVICE_ID keyword'%(comp_port_name))
-     
-        # verify multi-out port
-        bad_conn_id = "bad:"+str(uuid.uuid4())
-        comp_port_obj.connectPort(dataSink2_port_obj, bad_conn_id)
-        for attempt in xrange(5):
-            time.sleep(1.0)
-            data2 = dataSink2.getData()
-            #print >> sys.stderr,'attempt',attempt,'len(data2)=',len(data2)
-            if len(data2)>0:
-                break
-        #print 'data2',len(data2)
-        self.check(len(data2)>0,False,'%s: Did not receive data from tuner allocation with wrong alloc_id (multiport test)'%(comp_port_name))
-        sri1 = dataSink1.sri()
-        sri2 = dataSink2.sri()
-        print 'sri2',sri2
-        self.check(sri1.streamID==sri2.streamID,False,'%s: Did not receive correct SRI from tuner allocation with wrong alloc_id (multiport test)'%(comp_port_name))
-         
-        if self.device_discovery[ttype] < 2:
-            self.check(True,True,'%s: Cannot fully test multiport because only single %s tuner capability'%(comp_port_name,ttype),successMsg='info')
-        else:
-            pass # TODO - additional multiport tests here
-     
-        if listener1:
-            # verify listener
-            listener1 = self._generateListener(controller) # unique for each loop
-            listener1['LISTENER_ID'] = "listener1:"+listener1['LISTENER_ID']
-            listenerAlloc1 = self._generateListenerAlloc(listener1)
-            comp_port_obj.connectPort(dataSink3_port_obj, listener1['LISTENER_ID'])
-            self.dut_ref.allocateCapacity(listenerAlloc1)
-             
-            for attempt in xrange(5):
-                time.sleep(1.0)
-                data3 = dataSink3.getData()
-                #print >> sys.stderr,'attempt',attempt,'len(data3)=',len(data3)
-                if len(data3)>0:
-                    break
-            #print 'data3',len(data3)
-            self.check(len(data3)>0,True,'%s: Received data from listener allocation'%(comp_port_name))
-            sri1 = dataSink1.sri()
-            sri3 = dataSink3.sri()
-            print 'sri3',sri3
-            self.check(sri1.streamID==sri3.streamID,True,'%s: Received correct SRI from listener allocation'%(comp_port_name))
-             
-            # verify EOS
-            if listener2:
-                listener2 = self._generateListener(controller) # unique for each loop
-                listener2['LISTENER_ID'] = "listener2:"+listener2['LISTENER_ID']
-                listenerAlloc2 = self._generateListenerAlloc(listener2)
-                comp_port_obj.connectPort(dataSink4_port_obj, listener2['LISTENER_ID'])
-                self.dut_ref.allocateCapacity(listenerAlloc2)               
-                time.sleep(1.0)
-                #for port_dict in port_list:       
-                    #data4 = dataSink4.getData()
-            self.dut_ref.deallocateCapacity(listenerAlloc1)
-            self.check(dataSink3.eos(),True,'%s: Listener received EOS after deallocation of listener'%(comp_port_name))
-            self.check(dataSink1.eos(),False,'%s: Controller did not receive EOS after deallocation of listener'%(comp_port_name))
-            self.dut_ref.deallocateCapacity(tAlloc)
-            self.check(dataSink1.eos(),True,'%s: Controller did receive EOS after deallocation of tuner'%(comp_port_name))
-            if listener2:
-                self.check(dataSink4.eos(),True,'%s: Listener received EOS after deallocation of tuner'%(comp_port_name))
-                # cleanup listener2
-                comp_port_obj.disconnectPort(listener2['LISTENER_ID'])
-                self.dut_ref.deallocateCapacity(listenerAlloc2)
-            # cleanup listener1
-            comp_port_obj.disconnectPort(listener1['LISTENER_ID'])
-        # cleanup controller
-        comp_port_obj.disconnectPort(controller['ALLOC_ID'])
-        comp_port_obj.disconnectPort(bad_conn_id)
+            self.check(False,True,'%s: SRI has FRONTEND::DEVICE_ID keyword'%(comp_port_name))    
          
     # TODO - noseify
     def testFRONTEND_3_5_TunerStatusProperties(self):
@@ -2332,19 +2451,19 @@ class FrontendTunerTests(unittest.TestCase):
         '''
         #self.testReport.append('\nTest 3.5 - Tuner Status Properties')
         #self.getToBasicState()
-         
+        
         tuner_control = self.dut.getPort('DigitalTuner_in')
         tuner_control._narrow(FRONTEND.FrontendTuner)
-         
+        
         controller = self._generateRD()
         listener1 = self._generateListener(controller)
         listener2 = self._generateListener(controller)
-         
+        
         # make allocations
         controller_id = controller['ALLOC_ID']
         controller_alloc = self._generateAlloc(controller)
         self.check(self.dut_ref.allocateCapacity(controller_alloc),True,'ERROR -- could not allocate controller',throwOnFailure=True,silentSuccess=True)
- 
+
         listener1_id = listener1['LISTENER_ID']
         listener1_alloc = self._generateListenerAlloc(listener1)
         retval = self.dut_ref.allocateCapacity(listener1_alloc)
@@ -2358,7 +2477,7 @@ class FrontendTunerTests(unittest.TestCase):
             if not retval:
                 self.testReport.append('Could not allocate listener2 -- limited test')
                 listener2 = None
-         
+        
         # Verify correct tuner status structure (fields, types)
         # check presence of tuner status property
         # check that it contains the required fields of correct data type
@@ -2388,7 +2507,7 @@ class FrontendTunerTests(unittest.TestCase):
                 all_names = self.FE_tuner_status_fields_req.keys()+self.FE_tuner_status_fields_opt.keys()
                 for name in filter(lambda x: x not in all_names,status.keys()):
                     self.check(False, True, 'tuner_status has UNKNOWN field %s'%name, failureMsg='WARN')
-     
+    
         # Verify alloc_id_csv is populated after controller allocation
         try:
             status_val = self._getTunerStatusProp(controller_id,'FRONTEND::tuner_status::allocation_id_csv')
@@ -2399,7 +2518,7 @@ class FrontendTunerTests(unittest.TestCase):
                 self.check(True, False, 'controller allocation id added to tuner status after allocation of controller (could not get tuner status prop)')
             else:
                 self.check(controller_id, status_val.split(',')[0], 'controller allocation id added to tuner status after allocation of controller (must be first in CSV list)')
-         
+        
         # Verify tuner is enabled following allocation
         try:
             status_val = self._getTunerStatusProp(controller_id,'FRONTEND::tuner_status::enabled')
@@ -2410,7 +2529,7 @@ class FrontendTunerTests(unittest.TestCase):
                 self.check(True, False, 'Tuner is enabled in tuner status after tuner allocation (could not get tuner status prop)')
             else:
                 self.check(True, status_val, 'Tuner is enabled in tuner status after tuner allocation')
- 
+
         if listener1:
             # Verify listener allocation id is added after allocation of listener        
             try:
@@ -2422,7 +2541,7 @@ class FrontendTunerTests(unittest.TestCase):
                     self.check(True, False, 'listener allocation id added to tuner status after allocation of listener (could not get tuner status prop)')
                 else:
                     self.check(listener1_id in status_val.split(',')[1:], True, 'listener allocation id added to tuner status after allocation of listener (must not be first in CSV list)')
-         
+        
         if tuner_control:
             # Verify frequency prop
             try:
@@ -2437,7 +2556,7 @@ class FrontendTunerTests(unittest.TestCase):
                 else:
                     self.checkAlmostEqual(status_val, val, 'correct value for FRONTEND::tuner_status::center_frequency property',places=0)
             #setTunerCenterFrequency
-                 
+                
             # Verify bandwidth prop
             try:
                 val = tuner_control.getTunerBandwidth(controller_id)
@@ -2451,7 +2570,7 @@ class FrontendTunerTests(unittest.TestCase):
                 else:
                     self.checkAlmostEqual(status_val, val, 'correct value for FRONTEND::tuner_status::bandwidth property',places=0)
             #setTunerBandwidth
-             
+            
             # Verify sample rate prop
             try:
                 val = tuner_control.getTunerOutputSampleRate(controller_id)
@@ -2465,7 +2584,7 @@ class FrontendTunerTests(unittest.TestCase):
                 else:
                     self.checkAlmostEqual(status_val, val, 'correct value for FRONTEND::tuner_status::sample_rate property',places=0)
             #setTunerOutputSampleRate
-             
+            
             # Verify group id prop
             try:
                 val = tuner_control.getTunerGroupId(controller_id)
@@ -2478,7 +2597,7 @@ class FrontendTunerTests(unittest.TestCase):
                     pass
                 else:
                     self.check(status_val, val, 'correct value for FRONTEND::tuner_status::group_id property')
-             
+            
             # Verify rf flow id prop
             try:
                 val = tuner_control.getTunerRfFlowId(controller_id)
@@ -2491,7 +2610,7 @@ class FrontendTunerTests(unittest.TestCase):
                     pass
                 else:
                     self.check(status_val, val, 'correct value for FRONTEND::tuner_status::rf_flow_id property')
-         
+        
         if listener1:
             # Verify listener allocation id is removed after deallocation of listener
             self.dut_ref.deallocateCapacity(listener1_alloc)
@@ -2501,7 +2620,7 @@ class FrontendTunerTests(unittest.TestCase):
                 pass
             else:
                 self.check(listener1_id in status_val, False, 'listener allocation id removed from tuner status after deallocation of listener')
-             
+            
         # Verify controller allocation id is removed after deallocation of controller
         self.dut_ref.deallocateCapacity(controller_alloc)
         try:
@@ -2510,7 +2629,7 @@ class FrontendTunerTests(unittest.TestCase):
             pass
         else:
             self.check(None, status, 'controller allocation id removed from tuner status after deallocation of controller')
-         
+        
         if listener2:
             # Verify listener allocation id is removed after deallocation of controller
             #self.dut_ref.deallocateCapacity(controllerAlloc)

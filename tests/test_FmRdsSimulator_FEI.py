@@ -18,7 +18,7 @@ import frontend_tuner_unit_test_base as fe
       the dut if different from what is provided below.
 '''
 
-DEBUG_LEVEL = 5
+DEBUG_LEVEL = 3
 dut_name = 'FmRdsSimulator'
 IMPL_ID = 'cpp'
 dut_execparams = {}
