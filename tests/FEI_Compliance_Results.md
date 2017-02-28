@@ -8,7 +8,7 @@ To run [test\_FmRdsSimulator\_FEI.py](test_FmRdsSimulator_FEI.py), execute the f
 python test_FmRdsSimulator_FEI.py
 ```
 
-The test may take several minutes to perform the 258 checks when successful. It is common that fewer checks are made when unexpected failures occur, which prevent all checks from being made.
+The test may take several minutes to perform the checks when successful. It is common that fewer checks are made when unexpected failures occur, which prevent all checks from being made.
 
 ## Results
 
