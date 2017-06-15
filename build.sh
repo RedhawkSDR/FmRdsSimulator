@@ -24,9 +24,9 @@ if [ "$1" = "rpm" ]; then
     if [ -e rh.FmRdsSimulator.spec ]; then
         mydir=`dirname $0`
         tmpdir=`mktemp -d`
-        cp -r ${mydir} ${tmpdir}/rh.FmRdsSimulator-2.0.2
-        tar czf ${tmpdir}/rh.FmRdsSimulator-2.0.2.tar.gz --exclude=".svn" -C ${tmpdir} rh.FmRdsSimulator-2.0.2
-        rpmbuild -ta ${tmpdir}/rh.FmRdsSimulator-2.0.2.tar.gz
+        cp -r ${mydir} ${tmpdir}/rh.FmRdsSimulator-2.0.3
+        tar czf ${tmpdir}/rh.FmRdsSimulator-2.0.3.tar.gz --exclude=".svn" -C ${tmpdir} rh.FmRdsSimulator-2.0.3
+        rpmbuild -ta ${tmpdir}/rh.FmRdsSimulator-2.0.3.tar.gz
         rm -rf $tmpdir
     else
         echo "Missing RPM spec file in" `pwd`

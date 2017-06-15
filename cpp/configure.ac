@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see http://www.gnu.org/licenses/.
  */
-AC_INIT(rh.FmRdsSimulator, 2.0.2)
+AC_INIT(rh.FmRdsSimulator, 2.0.3)
 AM_INIT_AUTOMAKE([nostdinc foreign])
 AC_CONFIG_MACRO_DIR([m4])
 
