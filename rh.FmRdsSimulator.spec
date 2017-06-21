@@ -31,7 +31,7 @@ Prefix:         %{_prefix}
 
 Name:           rh.FmRdsSimulator
 Version:        2.0.2
-Release:        4%{?dist}
+Release:        5%{?dist}
 Summary:        Device %{name}
 
 Group:          REDHAWK/Devices
@@ -95,4 +95,8 @@ rm -rf $RPM_BUILD_ROOT
 %{_prefix}/dev/devices/rh/FmRdsSimulator/FmRdsSimulator.prf.xml
 %{_prefix}/dev/devices/rh/FmRdsSimulator/FmRdsSimulator.spd.xml
 %{_prefix}/dev/devices/rh/FmRdsSimulator/cpp
+
+%changelog
+* Wed Jun 21 2017 Ryan Bauman <rbauman@lgsinnovations.com> - 2.0.2-5
+- Mass rebuild for REDHAWK 2.1.1
 
