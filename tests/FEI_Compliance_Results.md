@@ -16,13 +16,12 @@ The test may take several minutes to perform the checks when successful. It is c
 
 ```
 Report Statistics:
-   Checks that returned "FAIL" .................. 2
-   Checks that returned "WARN" .................. 1
+   Checks that returned "FAIL" .................. 1
    Checks that returned "info" .................. 1
    Checks that returned "no" .................... 16
-   Checks that returned "ok" .................... 203
-   Checks with silent results ................... 38
-   Total checks made ............................ 261
+   Checks that returned "ok" .................... 235
+   Checks with silent results ................... 70
+   Total checks made ............................ 323
 ```
 
 * `FAIL` indicates the test failed. It may be acceptable to fail a test depending on the device/design. See below.
@@ -41,16 +40,9 @@ dataFloat_out: Cannot fully test multiport because only single
      RX_DIGITIZER tuner capability..........................................info
 ```
 
-### `WARN` Details
-
-The single `WARN` check is reporting that an unknown field was found in the tuner status, which is permitted. The reason is it a warning is to call extra attention in case the unknown (user defined) property could be modified to one of the many pre-defined optional fields also reported in the test.
-```
-tuner_status has UNKNOWN field FRONTEND::tuner_status::stream_id............WARN
-```
-
 ### `FAIL` Details
 
-There are 2 checks that report `FAIL` with the FmRdsSimulator, and this is known.
+There is 1 check that report `FAIL` with the FmRdsSimulator, and this is known.
 
 #### Multi-out port checks
 
@@ -59,6 +51,5 @@ The FmRdsSimulator does not implement a multi-out port, which is acceptable sinc
 ```
 dataFloat_out: Did not receive data from tuner allocation with wrong
      alloc_id (multiport test)..............................................FAIL
-dataFloat_out: Did not receive correct SRI from tuner allocation with
-     wrong alloc_id (multiport test)........................................FAIL
+
 ```

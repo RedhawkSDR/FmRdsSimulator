@@ -124,6 +124,10 @@ void FmRdsSimulator_i::construct()
 	}
 
 	std::sort (availableSampleRates.begin(), availableSampleRates.end());
+
+	// Initialize rfinfo packet
+	rfinfo_pkt.if_center_freq =0;
+	rfinfo_pkt.rf_flow_id = "";
 }
 
 void FmRdsSimulator_i::addAWGNChanged(const bool* old_value, const bool* new_value) {
@@ -288,6 +292,25 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 		return false;
 	}
 
+    // check request against RTL specs and analog input
+    const bool complex = true; // RTL operates using complex data
+    // Note: since samples are complex, assume BW == SR (rather than BW == SR/2 for Real samples)
+    if (rfinfo_pkt.if_center_freq !=0)	{
+		try {
+			validateRequestVsRFInfo(request,rfinfo_pkt, complex);
+		} catch(FRONTEND::BadParameterException& e){
+			LOG_INFO(FmRdsSimulator_i," Failed to Validate against rfInfo_Pkt. deviceSetTuning|BadParameterException - " << e.msg);
+			throw;
+		}
+	}
+    double if_offset = 0.0;
+    // calculate if_offset according to rx rfinfo packet
+    if(frontend::floatingPointCompare(rfinfo_pkt.if_center_freq,0) > 0){
+        if_offset = rfinfo_pkt.rf_center_freq-rfinfo_pkt.if_center_freq;
+		LOG_DEBUG(FmRdsSimulator_i, "Set IF offset to : " << if_offset);
+
+    }
+
 	unsigned int sampleRateToSet = 0;
 
 	// User cares about sample rate
@@ -343,11 +366,11 @@ bool FmRdsSimulator_i::deviceSetTuning(const frontend::frontend_tuner_allocation
 	}
 
 	try {
-		digiSim->setCenterFrequency((float) request.center_frequency);
-		fts.center_frequency = digiSim->getCenterFrequency();
+		digiSim->setCenterFrequency((float) request.center_frequency-if_offset);
+		fts.center_frequency = digiSim->getCenterFrequency()+if_offset;
 		sriChanged = true; // The COL and CHAN RF likely changed.
 	} catch (OutOfRangeException &ex) {
-		LOG_WARN(FmRdsSimulator_i, "Tried to tune to " << request.center_frequency << " but request was rejected by simulator.");
+		LOG_WARN(FmRdsSimulator_i, "Tried to tune to " << request.center_frequency-if_offset << " but request was rejected by simulator.");
 		return false;
 	}
 
@@ -581,24 +604,94 @@ Functions servicing the RFInfo port(s)
 *************************************************************/
 std::string FmRdsSimulator_i::get_rf_flow_id(const std::string& port_name)
 {
-	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
-    return std::string("none");
+	LOG_TRACE(FmRdsSimulator_i,__PRETTY_FUNCTION__ << " port_name=" << port_name);
+
+    if( port_name == "RFInfo_in"){
+        return rfinfo_pkt.rf_flow_id;
+    } else {
+        LOG_WARN(FmRdsSimulator_i, "get_rf_flow_id|Unknown port name: " << port_name);
+        return std::string("none");
+    }
 }
 
 void FmRdsSimulator_i::set_rf_flow_id(const std::string& port_name, const std::string& id)
 {
-	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
+	LOG_TRACE(FmRdsSimulator_i,__PRETTY_FUNCTION__ << " port_name=" << port_name << " id=" << id);
+
+    if( port_name == "RFInfo_in"){
+        rfinfo_pkt.rf_flow_id = id;
+        frontend_tuner_status[0].rf_flow_id = id;
+        cb->pushUpdatedSRI();
+    } else {
+        LOG_WARN(FmRdsSimulator_i, "set_rf_flow_id|Unknown port name: " << port_name);
+    }
 }
 
 frontend::RFInfoPkt FmRdsSimulator_i::get_rfinfo_pkt(const std::string& port_name)
 {
-	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
+    LOG_TRACE(FmRdsSimulator_i,__PRETTY_FUNCTION__ << " port_name=" << port_name);
+
     frontend::RFInfoPkt pkt;
+    if( port_name != "RFInfo_in"){
+        LOG_WARN(FmRdsSimulator_i, "get_rfinfo_pkt|Unknown port name: " << port_name);
+        return pkt;
+    }
+    pkt.rf_flow_id = rfinfo_pkt.rf_flow_id;
+    pkt.rf_center_freq = rfinfo_pkt.rf_center_freq;
+    pkt.rf_bandwidth = rfinfo_pkt.rf_bandwidth;
+    pkt.if_center_freq = rfinfo_pkt.if_center_freq;
+    pkt.spectrum_inverted = rfinfo_pkt.spectrum_inverted;
+    pkt.sensor.collector = rfinfo_pkt.sensor.collector;
+    pkt.sensor.mission = rfinfo_pkt.sensor.mission;
+    pkt.sensor.rx = rfinfo_pkt.sensor.rx;
+    pkt.sensor.antenna.description = rfinfo_pkt.sensor.antenna.description;
+    pkt.sensor.antenna.name = rfinfo_pkt.sensor.antenna.name;
+    pkt.sensor.antenna.size = rfinfo_pkt.sensor.antenna.size;
+    pkt.sensor.antenna.type = rfinfo_pkt.sensor.antenna.type;
+    pkt.sensor.feed.name = rfinfo_pkt.sensor.feed.name;
+    pkt.sensor.feed.polarization = rfinfo_pkt.sensor.feed.polarization;
+    pkt.sensor.feed.freq_range.max_val = rfinfo_pkt.sensor.feed.freq_range.max_val;
+    pkt.sensor.feed.freq_range.min_val = rfinfo_pkt.sensor.feed.freq_range.min_val;
+    pkt.sensor.feed.freq_range.values.resize(rfinfo_pkt.sensor.feed.freq_range.values.size());
+    for (unsigned int i=0; i<rfinfo_pkt.sensor.feed.freq_range.values.size(); i++) {
+        pkt.sensor.feed.freq_range.values[i] = rfinfo_pkt.sensor.feed.freq_range.values[i];
+    }
     return pkt;
 }
 
 void FmRdsSimulator_i::set_rfinfo_pkt(const std::string& port_name, const frontend::RFInfoPkt &pkt)
 {
-	LOG_TRACE(FmRdsSimulator_i, "Entering Method");
+    LOG_DEBUG(FmRdsSimulator_i, "set_rfinfo_pkt|port_name=" << port_name << " pkt.rf_flow_id=" << pkt.rf_flow_id);
+    LOG_DEBUG(FmRdsSimulator_i, "set_rfinfo_pkt|rf_center_freq=" << pkt.rf_center_freq );
+    LOG_DEBUG(FmRdsSimulator_i, "set_rfinfo_pkt|rf_bandwidth=" << pkt.rf_bandwidth );
+    LOG_DEBUG(FmRdsSimulator_i, "set_rfinfo_pkt|if_center_freq=" << pkt.if_center_freq );
+
+    if( port_name == "RFInfo_in"){
+        rfinfo_pkt.rf_flow_id = pkt.rf_flow_id;
+        rfinfo_pkt.rf_center_freq = pkt.rf_center_freq;
+        rfinfo_pkt.rf_bandwidth = pkt.rf_bandwidth;
+        rfinfo_pkt.if_center_freq = pkt.if_center_freq;
+        rfinfo_pkt.spectrum_inverted = pkt.spectrum_inverted;
+        rfinfo_pkt.sensor.collector = pkt.sensor.collector;
+        rfinfo_pkt.sensor.mission = pkt.sensor.mission;
+        rfinfo_pkt.sensor.rx = pkt.sensor.rx;
+        rfinfo_pkt.sensor.antenna.description = pkt.sensor.antenna.description;
+        rfinfo_pkt.sensor.antenna.name = pkt.sensor.antenna.name;
+        rfinfo_pkt.sensor.antenna.size = pkt.sensor.antenna.size;
+        rfinfo_pkt.sensor.antenna.type = pkt.sensor.antenna.type;
+        rfinfo_pkt.sensor.feed.name = pkt.sensor.feed.name;
+        rfinfo_pkt.sensor.feed.polarization = pkt.sensor.feed.polarization;
+        rfinfo_pkt.sensor.feed.freq_range.max_val = pkt.sensor.feed.freq_range.max_val;
+        rfinfo_pkt.sensor.feed.freq_range.min_val = pkt.sensor.feed.freq_range.min_val;
+        rfinfo_pkt.sensor.feed.freq_range.values.resize(pkt.sensor.feed.freq_range.values.size());
+        for (unsigned int i=0; i<pkt.sensor.feed.freq_range.values.size(); i++) {
+            rfinfo_pkt.sensor.feed.freq_range.values[i] = pkt.sensor.feed.freq_range.values[i];
+        }
+        frontend_tuner_status[0].rf_flow_id = pkt.rf_flow_id;
+        cb->pushUpdatedSRI();
+    } else {
+        LOG_WARN(FmRdsSimulator_i, "set_rfinfo_pkt|Unknown port name: " + port_name);
+    }
+
 }
 

@@ -79,6 +79,8 @@ class FmRdsSimulator_i : public FmRdsSimulator_base
         bool deviceDeleteTuning(frontend_tuner_status_struct_struct &fts, size_t tuner_id);
         void construct();
         std::vector<unsigned int> availableSampleRates;
+        // keep track of RFInfoPkt from RFInfo_in port
+        frontend::RFInfoPkt rfinfo_pkt;
 };
 
 #endif // FMRDSSIMULATOR_IMPL_H
