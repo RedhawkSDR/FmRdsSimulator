@@ -33,7 +33,7 @@ Report Statistics:
 
 ### `info` Details
 
-The `info` check is reporting that it's impossible to test full multi-out port capability with a single channel. The features that cannot be tested are not necessary for a single channel anyway.
+The `info` check is reporting that it is impossible to test full multi-out port capability with a single channel. The features that cannot be tested are not necessary for a single channel anyway.
 
 ```
 dataFloat_out: Cannot fully test multiport because only single
@@ -52,4 +52,12 @@ The FmRdsSimulator does not implement a multi-out port, which is acceptable sinc
 dataFloat_out: Did not receive data from tuner allocation with wrong
      alloc_id (multiport test)..............................................FAIL
 
+```
+
+### `ERROR` Details
+
+In addition to creating a human readable summary, the compliance test raises an `AssertionError` when tests fail to allow automated testing and test reporting. Due to the `FAIL` mentioned above, the following associated `ERROR` is reported.
+
+```
+ERROR: RX_DIG 4 DataFlow - First Port
 ```
