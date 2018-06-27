@@ -7,7 +7,7 @@ variables:
 before_script:
     - safe_version=$(echo ${short_version} | tr -d -)
     - safe_ref=$(echo ${CI_COMMIT_REF_NAME} | tr -d /| tr '[:upper:]' '[:lower:]')
-    - sim_version=1.1.0
+    - sim_version=develop
     - if [ -z "$CI_COMMIT_TAG" ]; then
         redhawk_version=${latest_version}
         rpm_release="0.$CI_PIPELINE_ID.rh${safe_version}";
