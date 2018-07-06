@@ -36,8 +36,8 @@ Report Statistics:
 The `info` check is reporting that it is impossible to test full multi-out port capability with a single channel. The features that cannot be tested are not necessary for a single channel anyway.
 
 ```
-dataFloat_out: Cannot fully test multiport because only single
-     RX_DIGITIZER tuner capability..........................................info
+testFRONTEND_3_4_DataFlow1: dataFloat_out: multi-out test: Cannot fully
+     test multiport because only single RX_DIGITIZER tuner capability.......info
 ```
 
 ### `FAIL` Details
@@ -49,9 +49,8 @@ There is 1 check that report `FAIL` with the FmRdsSimulator, and this is known.
 The FmRdsSimulator does not implement a multi-out port, which is acceptable since the FmRdsSimulator is a single channel device, but is considered bad practice nonetheless. It was done intentionally in order to make the FmRdsSimulator device as easy to use for a beginner as possible, without knowing all necessary steps to make use of a device with a multi-out port. This of course means the multi-out tests will fail. These failures are all expected.
 
 ```
-dataFloat_out: Did not receive data from tuner allocation with wrong
-     alloc_id (multiport test)..............................................FAIL
-
+testFRONTEND_3_4_DataFlow1: dataFloat_out: multi-out test: Stream not
+     received on port with bad connection ID................................FAIL
 ```
 
 ### `ERROR` Details

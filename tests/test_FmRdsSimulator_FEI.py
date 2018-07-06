@@ -48,7 +48,7 @@ dut_config = {}
 DUT = 'FmRdsSim'
 
 # Optional:
-DEBUG_LEVEL = 4    # typical values include 0, 1, 2, 3, 4 and 5
+DEBUG_LEVEL = 3    # typical values include 0, 1, 2, 3, 4 and 5
 DUT_INDEX = None
 DUT_IP_ADDR = "192.168.103.250"
 DUT_PORT = None
